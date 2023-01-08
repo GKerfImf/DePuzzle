@@ -20,7 +20,7 @@ The project can be run locally in two ways.
  export OPENAI_API_KEY=<your OpenAI API KEY>
  export DEEPL_API_KEY=<your Deepl API KEY>
 
- flask run -p 8080
+ gunicorn app:app -b 0.0.0.0:8080
 
  In browser, open: http://127.0.0.1:8080/
 ```
@@ -30,4 +30,6 @@ The project can be run locally in two ways.
  <edit Dockerfile to add your API keys>
  make build
  make run
+
+ In browser, open: http://127.0.0.1:8080/
 ```

@@ -10,4 +10,4 @@ ENV OPENAI_API_KEY <Your OpenAI API KEY>
 ENV DEEPL_API_KEY <Your Deepl API KEY>
 
 COPY . .
-CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0"]
+CMD ["gunicorn", "app:app", "-b", "0.0.0.0:5000"]
