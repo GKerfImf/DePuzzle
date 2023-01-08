@@ -5,7 +5,7 @@ DePuzzle is a simple word game that challenges players to reconstruct a sentence
 At the moment, the site is hosted at [this link](http://depuzzle.eu-central-1.elasticbeanstalk.com/).
 
 
-# Install Locally 
+# Run Locally 
 
 The project can be run locally in two ways. 
 
