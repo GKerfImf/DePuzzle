@@ -22,7 +22,20 @@ else:
 # ----------------------------------------------------------------
 
 
-def generatePrompts(sentiment, hardcore, n=1): 
+def generatePrompts(sentiment, hardcore, n=1):
+    """
+    Generates a text to translate via a prompt to OpenAI's GPT-3.
+    
+    This function generates a text to translate based on the specified 
+    sentiment and hardcore parameters. The generated texts are returned as a 
+    list of strings.
+    
+    @param {string} sentiment - The sentiment of a text to be generated.
+    @param {boolean} hardcore - A flag indicating whether a text should be hardcore.
+    @param {int} n - The number of prompts to generate.
+    
+    @return {list} - A list of generated prompts.
+    """
     if sentiment == "lov" and hardcore: 
         prompt=f"Write a long lovely story",
     elif sentiment == "sma" and hardcore: 
@@ -44,7 +57,7 @@ def generatePrompts(sentiment, hardcore, n=1):
     elif sentiment == "ang" and not hardcore: 
         prompt=f"Write an angry sentence",
     else: 
-        return "Something went wrong"
+        raise Exception('Unknown prompt.')
 
     # Use the `Completion` method to generate text using GPT-3
     response = openai.Completion.create(
@@ -58,6 +71,15 @@ def generatePrompts(sentiment, hardcore, n=1):
 
 
 def translate(text, lang): 
+    """
+    This function uses the DeepL API to translate the text from English to the
+    specified language. 
+    
+    @param {string} text - The text to be translated.
+    @param {string} lang - The target language for the translation.
+    
+    @return {string} - The translated text.
+    """
 
     # Set the API endpoint URL
     endpoint = "https://api-free.deepl.com/v2/translate"
@@ -76,7 +98,7 @@ def translate(text, lang):
     elif lang == "it":
         tgt_lang = "it"
     else: 
-        () # TODO 
+        raise Exception('Unknown language.')
 
     # Set the request parameters
     params = {
@@ -95,7 +117,6 @@ def translate(text, lang):
 
 @app.route('/load', methods=['POST'])
 def load():
-    print('> load')
     req = request.get_json()
 
     sen = generatePrompts(req["sentiment"], req["hardcore"], n=1)[0]
@@ -107,11 +128,9 @@ def load():
             "tra_tokens" : list(np.random.permutation(tra.split(' ')))
         }, indent=4)
 
-# TODO
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# TODO 
 if __name__ == '__main__':
     app.run(debug=False, port=8080)

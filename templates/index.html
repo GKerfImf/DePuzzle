@@ -19,6 +19,10 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
     
     <link rel="stylesheet" href="{{ url_for('static', filename= 'css/style.css') }}">
+    <script type="text/javascript" src="../static/js/render_diff.js"></script>
+    <script type="text/javascript" src="../static/js/session_storage.js"></script>
+    <script type="text/javascript" src="../static/js/load_data.js"></script>
+
     <title>DePuzzle</title>
 </head>
 
@@ -109,121 +113,13 @@
             </div>
             </div>
         </div>
-    
+
         <script>
-            // Save the state of the page in session storage
-            function saveState() {
-                // Get the current page state
-                var pageState = {
-                    sentiment_lov: document.getElementById("sentiment_lov").checked,
-                    sentiment_sma: document.getElementById("sentiment_sma").checked,
-                    sentiment_nor: document.getElementById("sentiment_nor").checked,
-                    sentiment_ann: document.getElementById("sentiment_ann").checked,
-                    sentiment_ang: document.getElementById("sentiment_ang").checked,
-                    lang_de: document.getElementById("lang_de").checked,
-                    lang_ru: document.getElementById("lang_ru").checked,
-                    lang_fr: document.getElementById("lang_fr").checked,
-                    lang_es: document.getElementById("lang_es").checked,
-                    lang_it: document.getElementById("lang_it").checked,
-                    hardcore: document.getElementById("hardcore").checked,
-                };
-                // Save the page state in session storage
-                sessionStorage.setItem('pageState', JSON.stringify(pageState));
-            }
-    
-            // Restore the state of the page from session storage
-            async function restoreState() {
-                // Get the page state from session storage
-                var pageState = JSON.parse(sessionStorage.getItem('pageState'));
-                if (!pageState) return;
-    
-                for (const [key, value] of Object.entries(pageState)) {
-                    if (value) { 
-                        document.getElementById(key).click();
-                    }
-                    document.getElementById(key).checked = value;
-                }           
-            }
-    
+
             // Save the state of the page on each navigation event
             window.addEventListener('beforeunload', saveState);
-        </script>
-    
-        <script>
-            
-            // Looks a bit cryptic, but, essentially, this function fakes the following input to [diff2html]
-            //   diff --git a/answer b/answer
-            //   index 0000001..fffffff
-            //   --- a/answer
-            //   +++ b/answer
-            //   @@ -1 +1 @@
-            //   - ${s1}
-            //   + ${s2}
-            function fakeDiff(s1, s2) { 
-                return `diff --git a/answer b/answer\nindex 0000001..fffffff\n--- a/answer\n+++ b/answer\n@@ -1 +1 @@\n- ${s1}\n+ ${s2}`;
-            }
-    
-            function renderDiff(elementId, s1, s2) { 
-                var diffString = fakeDiff(s1,s2)
-    
-                var targetElement = document.getElementById(elementId);
-                var configuration = {
-                    drawFileList: false,
-                    fileListToggle: false,
-                    fileListStartVisible: false,
-                    fileContentToggle: false,
-                    matching: 'lines',
-                    outputFormat: 'line-by-line',
-                    synchronisedScroll: true,
-                    highlight: false,
-                    renderNothingWhenEmpty: false
-                };
-                var diff2htmlUi = new Diff2HtmlUI(targetElement, diffString, configuration);
-                diff2htmlUi.draw();
-                diff2htmlUi.highlightCode();
-            }
-        </script>
-    
-        <script>
-            var data = null 
-            async function loadData() {
-                await restoreState();
-    
-                var standardRequest = { "lang" : "de", "sentiment" : "nor", "hardcore" : false }
-    
-                var pageState = JSON.parse(sessionStorage.getItem('pageState'));
-                if (pageState) {
-                    for (const [key, value] of Object.entries(pageState)) {
-                        if (value) { 
-                            if (key.startsWith("sentiment")) { 
-                                standardRequest["sentiment"] = key.slice(10);
-                            } else if (key.startsWith("lang")) { 
-                                standardRequest["lang"] = key.slice(5);
-                            } else { 
-                                standardRequest["hardcore"] = value;
-                            }
-                        }
-                    }
-                };
-    
-                try {
-                    const response = await fetch('/load', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(standardRequest)
-                    });
-    
-                    const resp = await response.json();
-                    data = resp;
-    
-                } catch (error) {
-                    // Handle any errors that occurred in the try block
-                }
-            }
-        
-            loadData().then(() => {
+                    
+            loadData().then(data => {
     
                 const writingForm = document.getElementById('translationForm');
                 const writingPrompt = document.getElementById('writingPrompt');
