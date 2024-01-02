@@ -71,28 +71,6 @@ const DraggableWord: React.FC<DraggableWordProps> = ({ word, isDragged, sendCoor
   );
 };
 
-
-interface SplitDivProps {
-  children: React.ReactNode[]
-}
-
-const SplitDiv: React.FC<SplitDivProps> = ({ children }) => {
-  return (
-    <div className="flex-col rounded-2xl border-2 border-slate-600 font-mono  shadow-2xl ">
-      <div className="flex justify-center border-b-2 border-slate-600 bg-slate-50 rounded-t-2xl">
-        {children[0]}
-      </div>
-      <div className="flex justify-center border-b-2 border-slate-600 bg-slate-50 p-8 ">
-        {children[1]}
-      </div>
-      <div className="flex justify-end bg-slate-50 rounded-b-2xl">
-        {children[2]}
-      </div>
-
-    </div>
-  );
-};
-
 function Game() {
   const [words, setWords] = useState<string[]>(
     "Die deutsche Küche ist für ihre Wurstwaren und Brotvarianten bekannt."
@@ -151,16 +129,22 @@ function Game() {
 function App() {
   return (
     <div >
-      <SplitDiv>
-        <div className="text-xl font-medium p-10 text-blue-900">
-          German cuisine is known for its sausages and bread varieties.
+      <div className="flex-col rounded-2xl border-2 border-slate-600 font-mono  shadow-2xl ">
+        <div className="flex justify-center border-b-2 border-slate-600 bg-slate-50 rounded-t-2xl">
+          <div className="text-xl font-medium p-10 text-blue-900">
+            German cuisine is known for its sausages and bread varieties.
+          </div>
         </div>
-        <Game />
-        <div>
-          <button className="p-2 text-white bg-indigo-500 rounded-lg m-2">Give up</button>
-          <button className="p-2 text-white bg-indigo-500 rounded-lg m-2">Submit</button>
+        <div className="flex justify-center border-b-2 border-slate-600 bg-slate-50 p-8 ">
+          <Game />
         </div>
-      </SplitDiv >
+        <div className="flex justify-end bg-slate-50 rounded-b-2xl">
+          <div>
+            <button className="p-2 text-white bg-indigo-500 rounded-lg m-2">Give up</button>
+            <button className="p-2 text-white bg-indigo-500 rounded-lg m-2">Submit</button>
+          </div>
+        </div>
+      </div>
     </div >
   )
 }
