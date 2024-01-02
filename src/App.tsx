@@ -73,6 +73,7 @@ function App() {
   const [coord, setCoord] = useState<Coordinate[]>(Array.from({ length: words.length }, (_) => { return { x: 0, y: 0 } }));
 
   const [draggedElIndex, setDraggedElIndex] = useState<number>(-1);
+  const [prevIndex, setPrevIndex] = useState<number>(-1);
 
   return (
     <div className="bg-gray-100 p-8">
@@ -86,13 +87,20 @@ function App() {
         }}
         onDragOver={(event: React.DragEvent) => {
           event.preventDefault();
+          const clientCoord = { x: event.clientX, y: event.clientY };
 
-          const closestWordIndex = findClosestIndex(coord, { x: event.clientX, y: event.clientY });
+          const closestWordIndex = findClosestIndex(coord, clientCoord);
           if (closestWordIndex != null) {
-            const newWords = words.slice();
-            arrayMove(newWords, draggedElIndex, closestWordIndex);
-            setWords(newWords);
-            setDraggedElIndex(closestWordIndex);
+            if (
+              closestWordIndex == prevIndex
+              || draggedElIndex == prevIndex && draggedElIndex == closestWordIndex) {
+            } else {
+              const newWords = words.slice();
+              arrayMove(newWords, draggedElIndex, closestWordIndex);
+              setWords(newWords);
+              setDraggedElIndex(closestWordIndex);
+              setPrevIndex(draggedElIndex);
+            }
           }
         }}
       >
