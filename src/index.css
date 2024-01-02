@@ -1,3 +1,24 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.flex{
+    display: flex
+}
+
+.h-screen{
+    height: 100vh
+}
+
+.w-screen{
+    width: 100vw
+}
+
+.justify-center{
+    justify-content: center
+}
+
+.bg-slate-100{
+    --tw-bg-opacity: 1;
+    background-color: rgb(241 245 249 / var(--tw-bg-opacity))
+}

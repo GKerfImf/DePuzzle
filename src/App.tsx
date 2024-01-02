@@ -1,6 +1,5 @@
 import React from 'react'
 import { useState, useRef, useEffect } from 'react';
-import './App.css';
 
 interface Coordinate {
   x: number;
@@ -128,24 +127,22 @@ function Game() {
 
 function App() {
   return (
-    <div >
-      <div className="flex-col rounded-2xl border-2 border-slate-600 font-mono  shadow-2xl ">
-        <div className="flex justify-center border-b-2 border-slate-600 bg-slate-50 rounded-t-2xl">
-          <div className="text-xl font-medium p-10 text-blue-900">
-            German cuisine is known for its sausages and bread varieties.
-          </div>
-        </div>
-        <div className="flex justify-center border-b-2 border-slate-600 bg-slate-50 p-8 ">
-          <Game />
-        </div>
-        <div className="flex justify-end bg-slate-50 rounded-b-2xl">
-          <div>
-            <button className="p-2 text-white bg-indigo-500 rounded-lg m-2">Give up</button>
-            <button className="p-2 text-white bg-indigo-500 rounded-lg m-2">Submit</button>
-          </div>
+    <div className="pt-10 flex-col font-mono h-full w-full max-w-xl">
+      <div className="flex justify-center border-2 border-white shadow-xl m-2 rounded-2xl bg-white">
+        <div className="text-xl font-medium p-10 text-blue-900">
+          German cuisine is known for its sausages and bread varieties.
         </div>
       </div>
-    </div >
+      <div className="flex justify-center border-2 shadow-xl p-8 m-2 rounded-2xl bg-white">
+        <Game />
+      </div>
+      <div className="flex justify-end">
+        <div>
+          <button className="p-2 text-white bg-indigo-500 rounded-lg m-2">Give up</button>
+          <button className="p-2 text-white bg-indigo-500 rounded-lg m-2">Submit</button>
+        </div>
+      </div>
+    </div>
   )
 }
 export default App
