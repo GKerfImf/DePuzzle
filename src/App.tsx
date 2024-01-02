@@ -59,7 +59,11 @@ const DraggableWord: React.FC<DraggableWordProps> = ({ word, isDragged, sendCoor
   return (
     <div
       draggable
-      className={`draggable ${isDragged ? "dragging" : ""} m-2 p-3 border rounded-lg bg-blue-300`}
+      className={`draggable
+        border-2 border-stone-500
+        mx-2 my-1 px-2 py-1 rounded-lg bg-blue-100 cursor-grab shadow-lg
+        ${isDragged ? "bg-gray-300 opacity-50" : ""}
+      `}
       ref={componentRef}
     >
       {word}
@@ -68,58 +72,95 @@ const DraggableWord: React.FC<DraggableWordProps> = ({ word, isDragged, sendCoor
 };
 
 
+interface SplitDivProps {
+  children: React.ReactNode[]
+}
 
-function App() {
-  const [words, setWords] = useState<string[]>(["1", "2345678", "3", "4", "5", "6", "7", "1234567", "312", "3123123"]);
+const SplitDiv: React.FC<SplitDivProps> = ({ children }) => {
+  return (
+    <div className="flex-col rounded-2xl border-2 border-slate-600 font-mono  shadow-2xl ">
+      <div className="flex justify-center border-b-2 border-slate-600 bg-slate-50 rounded-t-2xl">
+        {children[0]}
+      </div>
+      <div className="flex justify-center border-b-2 border-slate-600 bg-slate-50 p-8 ">
+        {children[1]}
+      </div>
+      <div className="flex justify-end bg-slate-50 rounded-b-2xl">
+        {children[2]}
+      </div>
+
+    </div>
+  );
+};
+
+function Game() {
+  const [words, setWords] = useState<string[]>(
+    "Die deutsche Küche ist für ihre Wurstwaren und Brotvarianten bekannt."
+      .split(" ")
+  );
   const [coord, setCoord] = useState<Coordinate[]>(Array.from({ length: words.length }, (_) => { return { x: 0, y: 0 } }));
 
   const [draggedElIndex, setDraggedElIndex] = useState<number>(-1);
   const [prevIndex, setPrevIndex] = useState<number>(-1);
 
   return (
-    <div className="bg-gray-100 p-8">
-      <div className="flex flex-wrap"
-        onDragStart={(event: React.DragEvent) => {
-          const index = findClosestIndex(coord, { x: event.clientX, y: event.clientY })!
-          setDraggedElIndex(index);
-        }}
-        onDragEnd={(_event: React.DragEvent) => {
-          setDraggedElIndex(-1);
-        }}
-        onDragOver={(event: React.DragEvent) => {
-          event.preventDefault();
-          const clientCoord = { x: event.clientX, y: event.clientY };
+    <div className="flex flex-wrap"
+      onDragStart={(event: React.DragEvent) => {
+        const index = findClosestIndex(coord, { x: event.clientX, y: event.clientY })!
+        setDraggedElIndex(index);
+      }}
+      onDragEnd={(_event: React.DragEvent) => {
+        setDraggedElIndex(-1);
+      }}
+      onDragOver={(event: React.DragEvent) => {
+        event.preventDefault();
+        const clientCoord = { x: event.clientX, y: event.clientY };
 
-          const closestWordIndex = findClosestIndex(coord, clientCoord);
-          if (closestWordIndex != null) {
-            if (
-              closestWordIndex == prevIndex
-              || draggedElIndex == prevIndex && draggedElIndex == closestWordIndex) {
-            } else {
-              const newWords = words.slice();
-              arrayMove(newWords, draggedElIndex, closestWordIndex);
-              setWords(newWords);
-              setDraggedElIndex(closestWordIndex);
-              setPrevIndex(draggedElIndex);
-            }
+        const closestWordIndex = findClosestIndex(coord, clientCoord);
+        if (closestWordIndex != null) {
+          if (
+            closestWordIndex == prevIndex
+            || draggedElIndex == prevIndex && draggedElIndex == closestWordIndex) {
+          } else {
+            const newWords = words.slice();
+            arrayMove(newWords, draggedElIndex, closestWordIndex);
+            setWords(newWords);
+            setDraggedElIndex(closestWordIndex);
+            setPrevIndex(draggedElIndex);
           }
-        }}
-      >
-        {words.map((word, index) => {
-          return (
-            <DraggableWord
-              key={index}
-              word={word}
-              isDragged={index == draggedElIndex}
-              sendCoord={(p) => {
-                var newCoord = coord;
-                newCoord[index] = p;
-                setCoord(newCoord);
-              }} />
-          );
-        })}
+        }
+      }}
+    >
+      {words.map((word, index) => {
+        return (
+          <DraggableWord
+            key={index}
+            word={word}
+            isDragged={index == draggedElIndex}
+            sendCoord={(p) => {
+              var newCoord = coord;
+              newCoord[index] = p;
+              setCoord(newCoord);
+            }} />
+        );
+      })}
+    </div>
+  )
+}
 
-      </div>
+function App() {
+  return (
+    <div >
+      <SplitDiv>
+        <div className="text-xl font-medium p-10 text-blue-900">
+          German cuisine is known for its sausages and bread varieties.
+        </div>
+        <Game />
+        <div>
+          <button className="p-2 text-white bg-indigo-500 rounded-lg m-2">Give up</button>
+          <button className="p-2 text-white bg-indigo-500 rounded-lg m-2">Submit</button>
+        </div>
+      </SplitDiv >
     </div >
   )
 }
