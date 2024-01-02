@@ -1,5 +1,5 @@
-import React from 'react'
-import { useState, useRef, useEffect } from 'react';
+import React from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface Coordinate {
   x: number;
@@ -39,12 +39,16 @@ function arrayMove(arr: string[], fromIndex: number, toIndex: number) {
 }
 
 interface DraggableWordProps {
-  word: string,
+  word: string;
   isDragged: boolean;
-  sendCoord: (_: Coordinate) => void
+  sendCoord: (_: Coordinate) => void;
 }
 
-const DraggableWord: React.FC<DraggableWordProps> = ({ word, isDragged, sendCoord }) => {
+const DraggableWord: React.FC<DraggableWordProps> = ({
+  word,
+  isDragged,
+  sendCoord,
+}) => {
   const componentRef: React.RefObject<HTMLDivElement> = useRef(null);
 
   const getCenter = (div: DOMRect) => {
@@ -53,14 +57,13 @@ const DraggableWord: React.FC<DraggableWordProps> = ({ word, isDragged, sendCoor
 
   useEffect(() => {
     sendCoord(getCenter(componentRef.current?.getBoundingClientRect()!));
-  })
+  });
 
   return (
     <div
       draggable
       className={`draggable
-        border-2 border-stone-500
-        mx-2 my-1 px-2 py-1 rounded-lg bg-blue-100 cursor-grab shadow-lg
+        mx-2 my-1 cursor-grab rounded-lg border-2 border-stone-500 bg-blue-100 px-2 py-1 shadow-lg
         ${isDragged ? "bg-gray-300 opacity-50" : ""}
       `}
       ref={componentRef}
@@ -72,18 +75,27 @@ const DraggableWord: React.FC<DraggableWordProps> = ({ word, isDragged, sendCoor
 
 function Game() {
   const [words, setWords] = useState<string[]>(
-    "Die deutsche Küche ist für ihre Wurstwaren und Brotvarianten bekannt."
-      .split(" ")
+    "Die deutsche Küche ist für ihre Wurstwaren und Brotvarianten bekannt.".split(
+      " ",
+    ),
   );
-  const [coord, setCoord] = useState<Coordinate[]>(Array.from({ length: words.length }, (_) => { return { x: 0, y: 0 } }));
+  const [coord, setCoord] = useState<Coordinate[]>(
+    Array.from({ length: words.length }, (_) => {
+      return { x: 0, y: 0 };
+    }),
+  );
 
   const [draggedElIndex, setDraggedElIndex] = useState<number>(-1);
   const [prevIndex, setPrevIndex] = useState<number>(-1);
 
   return (
-    <div className="flex flex-wrap"
+    <div
+      className="flex flex-wrap"
       onDragStart={(event: React.DragEvent) => {
-        const index = findClosestIndex(coord, { x: event.clientX, y: event.clientY })!
+        const index = findClosestIndex(coord, {
+          x: event.clientX,
+          y: event.clientY,
+        })!;
         setDraggedElIndex(index);
       }}
       onDragEnd={(_event: React.DragEvent) => {
@@ -96,8 +108,9 @@ function Game() {
         const closestWordIndex = findClosestIndex(coord, clientCoord);
         if (closestWordIndex != null) {
           if (
-            closestWordIndex == prevIndex
-            || draggedElIndex == prevIndex && draggedElIndex == closestWordIndex) {
+            closestWordIndex == prevIndex ||
+            (draggedElIndex == prevIndex && draggedElIndex == closestWordIndex)
+          ) {
           } else {
             const newWords = words.slice();
             arrayMove(newWords, draggedElIndex, closestWordIndex);
@@ -118,31 +131,36 @@ function Game() {
               var newCoord = coord;
               newCoord[index] = p;
               setCoord(newCoord);
-            }} />
+            }}
+          />
         );
       })}
     </div>
-  )
+  );
 }
 
 function App() {
   return (
-    <div className="pt-10 flex-col font-mono h-full w-full max-w-xl">
-      <div className="flex justify-center border-2 border-white shadow-xl m-2 rounded-2xl bg-white">
-        <div className="text-xl font-medium p-10 text-blue-900">
+    <div className="h-full w-full max-w-xl flex-col pt-10 font-mono">
+      <div className="m-2 flex justify-center rounded-2xl border-2 border-white bg-white shadow-xl">
+        <div className="p-10 text-xl font-medium text-blue-900">
           German cuisine is known for its sausages and bread varieties.
         </div>
       </div>
-      <div className="flex justify-center border-2 shadow-xl p-8 m-2 rounded-2xl bg-white">
+      <div className="m-2 flex justify-center rounded-2xl border-2 bg-white p-8 shadow-xl">
         <Game />
       </div>
       <div className="flex justify-end">
         <div>
-          <button className="p-2 text-white bg-indigo-500 rounded-lg m-2">Give up</button>
-          <button className="p-2 text-white bg-indigo-500 rounded-lg m-2">Submit</button>
+          <button className="m-2 rounded-lg bg-indigo-500 p-2 text-white">
+            Give up
+          </button>
+          <button className="m-2 rounded-lg bg-indigo-500 p-2 text-white">
+            Submit
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
-export default App
+export default App;
