@@ -72,7 +72,7 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
     <div
       draggable
       className={`draggable
-        mx-2 my-1 cursor-grab rounded-lg border-2 border-stone-500 bg-blue-100 px-2 py-1 shadow-lg
+        mx-2 my-1 cursor-grab rounded-lg border bg-white px-2 py-1 shadow-lg
         ${isDragged ? "bg-gray-300 opacity-50" : ""}
       `}
       ref={componentRef}
@@ -151,12 +151,12 @@ function Game() {
 function App() {
   return (
     <div className="h-full w-full max-w-xl flex-col pt-10 font-mono">
-      <div className="m-2 flex justify-center rounded-2xl border-2 border-white bg-white shadow-xl">
+      <div className="m-2 flex justify-center rounded-2xl border bg-white shadow-xl">
         <div className="p-10 text-xl font-medium text-blue-900">
           German cuisine is known for its sausages and bread varieties.
         </div>
       </div>
-      <div className="m-2 flex justify-center rounded-2xl border-2 bg-white p-8 shadow-xl">
+      <div className="m-2 flex justify-center rounded-2xl border bg-white p-8 shadow-xl">
         <Game />
       </div>
       <div className="flex justify-end">
