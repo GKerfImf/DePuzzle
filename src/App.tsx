@@ -1,5 +1,5 @@
 import React from "react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 interface Coordinate {
   x: number;
@@ -200,6 +200,54 @@ function zip<S1, S2>(
   return zipped;
 }
 
+// Inspired by [https://spin.atomicobject.com/collapse-component-react]
+const Collapse: React.FC<React.PropsWithChildren<{ isExpanded: boolean }>> = ({
+  isExpanded,
+  children,
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [contentHeight, setContentHeight] = useState(0);
+
+  // TODO: do something about the magic constant
+  useEffect(() => {
+    if (ref.current) {
+      setContentHeight(ref.current.clientHeight + 50);
+    }
+  }, [children]);
+
+  // Thanks to [https://stackoverflow.com/a/69864970/8125485]
+  return (
+    <div
+      className="overflow-hidden transition-all delay-150 duration-300"
+      style={{
+        height: isExpanded ? contentHeight : 0,
+      }}
+    >
+      <div ref={ref}>{children}</div>
+    </div>
+  );
+};
+
+interface QuestionProp {
+  sentence: string;
+}
+
+const Question: React.FC<QuestionProp> = ({ sentence }) => {
+  return (
+    <div className="flex w-full flex-row justify-normal border-b py-2">
+      <div className="flex w-3/4 justify-center text-sm">{sentence}</div>
+      <div className="flex w-1/4 justify-end">
+        <button className="mx-2 h-10 rounded-md border bg-green-100 p-1">
+          Yes
+        </button>
+        <button className="mx-2 h-10 rounded-md border bg-red-100 p-1">
+          No
+        </button>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   // TODO: translated sentence received from server
   const inputSentence =
@@ -240,6 +288,11 @@ function App() {
     return Hint.Unknown;
   };
 
+  const [isExpanded, setIsExpanded] = useState(false);
+  const toggleIsExpanded = useCallback(() => {
+    setIsExpanded((isExpanded) => !isExpanded);
+  }, []);
+
   const submitOnClick = () => {
     const newHints = new Map([...currentHints]);
 
@@ -273,19 +326,43 @@ function App() {
           reportWordsOrder={setCurrentWordsOrdering}
         />
       </div>
-      <div className="flex justify-end">
-        <div>
-          <button className="m-2 rounded-lg bg-indigo-500 p-2 text-white">
-            Give up
-          </button>
-          <button
-            className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
-            onClick={submitOnClick}
-          >
-            Submit
-          </button>
+      <Collapse isExpanded={isExpanded}>
+        <div className="mx-2 flex-col justify-center rounded-2xl border bg-white p-7 text-xl font-medium text-blue-900 shadow-xl">
+          <Question
+            sentence={
+              "Is this sentence a valuable addition to vocabulary building for intermediate German learners?"
+            }
+          />
+          <Question
+            sentence={
+              "Does knowing this sentence aid in daily German conversations?"
+            }
+          />
+          <Question
+            sentence={
+              "Is this sentence suitable for A1 or A2 level German learners?"
+            }
+          />
         </div>
-      </div>
+      </Collapse>
+      <Collapse isExpanded={!isExpanded}>
+        <div className="flex justify-end">
+          <div>
+            <button
+              className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
+              onClick={toggleIsExpanded}
+            >
+              Give up
+            </button>
+            <button
+              className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
+              onClick={submitOnClick}
+            >
+              Submit
+            </button>
+          </div>
+        </div>
+      </Collapse>
     </div>
   );
 }
