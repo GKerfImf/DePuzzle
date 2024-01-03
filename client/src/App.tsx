@@ -293,7 +293,7 @@ function App() {
     setIsExpanded((isExpanded) => !isExpanded);
   }, []);
 
-  const submitOnClick = () => {
+  const submitOnClick = async () => {
     const newHints = new Map([...currentHints]);
 
     zip(currentWordsOrdering, correctWordOrder).forEach(
@@ -312,6 +312,19 @@ function App() {
       },
     );
     setCurrentHints(newHints);
+
+    // TODO: for testing purposes, delete
+    const testGet = await fetch("http://localhost:5174/main").then((response) =>
+      response.json(),
+    );
+    console.log(testGet);
+
+    // TODO: for testing purposes, delete
+    const testPost = await fetch("http://localhost:5174/main", {
+      method: "POST",
+      body: JSON.stringify({ data: "test post" }),
+    }).then((response) => response.json());
+    console.log(testPost);
   };
 
   return (
