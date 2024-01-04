@@ -104,20 +104,18 @@ const hint2color = (hint: Hint) => {
 };
 
 interface PuzzleProps {
-  shuffledWords: string[];
+  setCurrentSolution: React.Dispatch<React.SetStateAction<string[]>>;
+  getCurrentSolution: () => string[];
   wordHints: (word: string, index: number) => Hint;
-  reportWordsOrder: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 const Puzzle: React.FC<PuzzleProps> = ({
-  shuffledWords,
-  reportWordsOrder,
+  setCurrentSolution,
+  getCurrentSolution,
   wordHints,
 }) => {
-  const [words, setWords] = useState<string[]>(shuffledWords);
-
   const [coord, setCoord] = useState<Coordinate[]>(
-    Array.from({ length: words.length }, (_) => {
+    Array.from({ length: getCurrentSolution().length }, (_) => {
       return { x: 0, y: 0 };
     }),
   );
@@ -135,7 +133,7 @@ const Puzzle: React.FC<PuzzleProps> = ({
 
   const onDragEndHandle = (_event: React.DragEvent) => {
     setDraggedElIndex(-1);
-    reportWordsOrder(words);
+    setCurrentSolution(getCurrentSolution());
   };
 
   const onDragOverHandle = (event: React.DragEvent) => {
@@ -149,9 +147,9 @@ const Puzzle: React.FC<PuzzleProps> = ({
         (draggedElIndex == prevIndex && draggedElIndex == closestWordIndex)
       ) {
       } else {
-        const newWords = words.slice();
+        const newWords = getCurrentSolution().slice();
         arrayMove(newWords, draggedElIndex, closestWordIndex);
-        setWords(newWords);
+        setCurrentSolution(newWords);
         setDraggedElIndex(closestWordIndex);
         setPrevIndex(draggedElIndex);
       }
@@ -165,7 +163,7 @@ const Puzzle: React.FC<PuzzleProps> = ({
       onDragEnd={onDragEndHandle}
       onDragOver={onDragOverHandle}
     >
-      {words.map((word, index) => {
+      {getCurrentSolution().map((word, index) => {
         return (
           <DraggableWord
             key={index}
@@ -236,20 +234,8 @@ function App() {
   // English sentence that the user has to translate to German
   const [sentenceToTranslate, setSentenceToTranslate] = useState("");
 
-  // TODO: remove the explicit init
   // The current solution
-  const [currentSolution, setCurrentSolution] = useState<string[]>([
-    "Brotvarianten",
-    "für",
-    "Küche",
-    "Die",
-    "und",
-    "ist",
-    "bekannt.",
-    "ihre",
-    "Wurstwaren",
-    "deutsche",
-  ]);
+  const [currentSolution, setCurrentSolution] = useState<string[]>([]);
 
   //
   const [currentHints, setCurrentHints] = useState<Map<string, number>>(
@@ -262,8 +248,6 @@ function App() {
         (response) => response.json(),
       );
       setSentenceToTranslate(translationProblem.to_translate);
-
-      // TODO: for now does not work. Have to manage state differently
       setCurrentSolution(translationProblem.shuffled_words);
     }
     fetchProblem();
@@ -306,8 +290,11 @@ function App() {
       <div className="m-2 flex justify-center rounded-2xl border bg-white p-8 shadow-xl">
         <Puzzle
           wordHints={getHint}
-          shuffledWords={currentSolution}
-          reportWordsOrder={setCurrentSolution}
+          getCurrentSolution={() => {
+            return currentSolution;
+          }}
+          // shuffledWords={currentSolution}
+          setCurrentSolution={setCurrentSolution}
         />
       </div>
       <Collapse isExpanded={isExpanded}>
@@ -333,6 +320,7 @@ function App() {
         <div className="flex justify-end">
           <div>
             <button
+              disabled
               className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
               onClick={toggleIsExpanded}
             >
