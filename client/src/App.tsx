@@ -244,9 +244,9 @@ function App() {
 
   useEffect(() => {
     async function fetchProblem() {
-      const translationProblem = await fetch("http://localhost:5174/main").then(
-        (response) => response.json(),
-      );
+      const translationProblem = await fetch(
+        "https://de-puzzle-api.vercel.app/main",
+      ).then((response) => response.json());
       setSentenceToTranslate(translationProblem.to_translate);
       setCurrentSolution(translationProblem.shuffled_words);
     }
@@ -261,7 +261,7 @@ function App() {
   };
 
   const submitOnClick = async () => {
-    const result = await fetch("http://localhost:5174/main", {
+    const result = await fetch("https://de-puzzle-api.vercel.app/main", {
       method: "POST",
       body: JSON.stringify({
         solution: currentSolution,

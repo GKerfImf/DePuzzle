@@ -8,7 +8,13 @@ enum Hint {
 }
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: ["https://de-puzzle.vercel.app/"],
+    methods: ["POST", "GET"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.listen(5174);
 
