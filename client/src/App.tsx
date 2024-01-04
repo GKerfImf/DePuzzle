@@ -184,22 +184,6 @@ const Puzzle: React.FC<PuzzleProps> = ({
   );
 };
 
-//
-// https://gist.github.com/dev-thalizao/affaac253be5b5305e0faec3b650ba27
-function zip<S1, S2>(
-  firstCollection: Array<S1>,
-  lastCollection: Array<S2>,
-): Array<[S1, S2]> {
-  const length = Math.min(firstCollection.length, lastCollection.length);
-  const zipped: Array<[S1, S2]> = [];
-
-  for (let index = 0; index < length; index++) {
-    zipped.push([firstCollection[index], lastCollection[index]]);
-  }
-
-  return zipped;
-}
-
 // Inspired by [https://spin.atomicobject.com/collapse-component-react]
 const Collapse: React.FC<React.PropsWithChildren<{ isExpanded: boolean }>> = ({
   isExpanded,
@@ -249,37 +233,41 @@ const Question: React.FC<QuestionProp> = ({ sentence }) => {
 };
 
 function App() {
-  // TODO: translated sentence received from server
-  const inputSentence =
-    "German cuisine is known for its sausages and bread varieties.";
+  // English sentence that the user has to translate to German
+  const [sentenceToTranslate, setSentenceToTranslate] = useState("");
 
-  // TODO: for testing purposes, delete
-  const inputSentenceDe =
-    "Die deutsche Küche ist für ihre Wurstwaren und Brotvarianten bekannt.";
-
-  // TODO: move to server part
-  const shuffle = (array: string[]) => {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  };
-
-  // TODO: for testing purposes, delete
-  const correctWordOrder = inputSentenceDe.split(" ");
-
-  // TODO: initial puzzle received from server
-  const initialShuffledWords = shuffle(inputSentenceDe.split(" "));
-
-  // Variables tracking the current solution
-  const [currentWordsOrdering, setCurrentWordsOrdering] =
-    useState<string[]>(initialShuffledWords);
+  // TODO: remove the explicit init
+  // The current solution
+  const [currentSolution, setCurrentSolution] = useState<string[]>([
+    "Brotvarianten",
+    "für",
+    "Küche",
+    "Die",
+    "und",
+    "ist",
+    "bekannt.",
+    "ihre",
+    "Wurstwaren",
+    "deutsche",
+  ]);
 
   //
   const [currentHints, setCurrentHints] = useState<Map<string, number>>(
     new Map(),
   );
+
+  useEffect(() => {
+    async function fetchProblem() {
+      const translationProblem = await fetch("http://localhost:5174/main").then(
+        (response) => response.json(),
+      );
+      setSentenceToTranslate(translationProblem.to_translate);
+
+      // TODO: for now does not work. Have to manage state differently
+      setCurrentSolution(translationProblem.shuffled_words);
+    }
+    fetchProblem();
+  }, []);
 
   const getHint = (word: string, index: number) => {
     if (currentHints.has(JSON.stringify({ word: word, index: index }))) {
@@ -288,55 +276,38 @@ function App() {
     return Hint.Unknown;
   };
 
+  const submitOnClick = async () => {
+    const result = await fetch("http://localhost:5174/main", {
+      method: "POST",
+      body: JSON.stringify({
+        solution: currentSolution,
+        known_hints: JSON.stringify(Object.fromEntries(currentHints)),
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).then((response) => response.json());
+    const newHints: Map<string, number> = new Map(
+      Object.entries(JSON.parse(result.hints)),
+    );
+    setCurrentHints(newHints);
+  };
+
   const [isExpanded, setIsExpanded] = useState(false);
   const toggleIsExpanded = useCallback(() => {
     setIsExpanded((isExpanded) => !isExpanded);
   }, []);
 
-  const submitOnClick = async () => {
-    const newHints = new Map([...currentHints]);
-
-    zip(currentWordsOrdering, correctWordOrder).forEach(
-      (word: [string, string], index: number) => {
-        if (word[0] == word[1]) {
-          newHints.set(
-            JSON.stringify({ word: word[0], index: index }),
-            Hint.Correct,
-          );
-        } else {
-          newHints.set(
-            JSON.stringify({ word: word[0], index: index }),
-            Hint.Incorrect,
-          );
-        }
-      },
-    );
-    setCurrentHints(newHints);
-
-    // TODO: for testing purposes, delete
-    const testGet = await fetch("http://localhost:5174/main").then((response) =>
-      response.json(),
-    );
-    console.log(testGet);
-
-    // TODO: for testing purposes, delete
-    const testPost = await fetch("http://localhost:5174/main", {
-      method: "POST",
-      body: JSON.stringify({ data: "test post" }),
-    }).then((response) => response.json());
-    console.log(testPost);
-  };
-
   return (
     <div className="h-full w-full max-w-xl flex-col pt-10 font-mono">
       <div className="m-2 flex justify-center rounded-2xl border bg-white p-10 text-xl font-medium text-blue-900 shadow-xl">
-        {inputSentence}
+        {sentenceToTranslate}
       </div>
       <div className="m-2 flex justify-center rounded-2xl border bg-white p-8 shadow-xl">
         <Puzzle
           wordHints={getHint}
-          shuffledWords={initialShuffledWords}
-          reportWordsOrder={setCurrentWordsOrdering}
+          shuffledWords={currentSolution}
+          reportWordsOrder={setCurrentSolution}
         />
       </div>
       <Collapse isExpanded={isExpanded}>
