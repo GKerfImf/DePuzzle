@@ -51,6 +51,7 @@ interface DraggableWordProps {
   word: string;
   color: string;
   isDragged: boolean;
+  isClicked: boolean;
   sendCoord: (_: Coordinate) => void;
 }
 
@@ -58,6 +59,7 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   word,
   color,
   isDragged,
+  isClicked,
   sendCoord,
 }) => {
   const componentRef: React.RefObject<HTMLDivElement> = useRef(null);
@@ -73,7 +75,8 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   return (
     <div
       draggable
-      className={`draggable mx-2 my-1 cursor-grab rounded-lg ${color} px-2 py-1 shadow-lg
+      className={`draggable mx-2 my-1 cursor-grab rounded-lg ${color}  px-2 py-1 shadow-lg
+                      ${isClicked ? " shadow-lg shadow-cyan-500/50" : ""}
                       ${isDragged ? "bg-gray-300 opacity-50" : ""}
       `}
       ref={componentRef}
@@ -123,6 +126,8 @@ const Puzzle: React.FC<PuzzleProps> = ({
   const [draggedElIndex, setDraggedElIndex] = useState<number>(-1);
   const [prevIndex, setPrevIndex] = useState<number>(-1);
 
+  const [clickedWordIndex, setClickedWordIndex] = useState<number | null>(null);
+
   const dragStartHandle = (event: React.DragEvent) => {
     const index = findClosestIndex(coord, {
       x: event.clientX,
@@ -156,12 +161,40 @@ const Puzzle: React.FC<PuzzleProps> = ({
     }
   };
 
+  const onClickHandle = (event: React.MouseEvent) => {
+    // TODO: Not ideal, but works ok. Improve in the future.
+    //       One problem with this approach is that a click
+    //       will highlight the word with the closest center
+    //       to the click (not the words that is being clicked).
+    // TODO: improve name
+    const index = findClosestIndex(coord, {
+      x: event.clientX,
+      y: event.clientY,
+    })!;
+
+    if (clickedWordIndex == null) {
+      setClickedWordIndex(index);
+    } else if (clickedWordIndex == index) {
+      setClickedWordIndex(null);
+    } else {
+      // TODO: move to a new function
+      // Two different words
+      const newWords = getCurrentSolution().slice();
+      newWords[index] = getCurrentSolution()[clickedWordIndex];
+      newWords[clickedWordIndex] = getCurrentSolution()[index];
+
+      setCurrentSolution(newWords);
+      setClickedWordIndex(null);
+    }
+  };
+
   return (
     <div
       className="flex flex-wrap"
       onDragStart={dragStartHandle}
       onDragEnd={onDragEndHandle}
       onDragOver={onDragOverHandle}
+      onClick={onClickHandle}
     >
       {getCurrentSolution().map((word, index) => {
         return (
@@ -169,6 +202,7 @@ const Puzzle: React.FC<PuzzleProps> = ({
             key={index}
             word={word}
             color={hint2color(wordHints(word, index))}
+            isClicked={index == clickedWordIndex}
             isDragged={index == draggedElIndex}
             sendCoord={(p: Coordinate) => {
               var newCoord = coord;
