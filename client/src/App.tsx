@@ -237,7 +237,7 @@ function App() {
   // The current solution
   const [currentSolution, setCurrentSolution] = useState<string[]>([]);
 
-  //
+  // Currently known set of hints
   const [currentHints, setCurrentHints] = useState<Map<string, number>>(
     new Map(),
   );
