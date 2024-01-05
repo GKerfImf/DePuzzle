@@ -1,271 +1,11 @@
-import React from "react";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Puzzle from "./Puzzle";
+import Questions from "./Questions";
+import Collapse from "./Collapse";
+import Hint from "./util/hint";
 
-const API_SERV = "https://de-puzzle-api.vercel.app";
-// const API_SERV = "http://localhost:5174";
-
-interface Coordinate {
-  x: number;
-  y: number;
-}
-
-function findClosestIndex(coord: Coordinate[], p: Coordinate): number | null {
-  function skewedDistance(p1: Coordinate, p2: Coordinate): number {
-    // Controls the effect of each component on the total distance. When
-    // one drags a word, this function calculates the distance to the
-    // closest non-dragged word. If there are multiple rows, we would
-    // like the dragged word to favor words on the same row over words
-    // on other rows. The Y-axis has a higher multiplier to force such
-    // behavior.
-    const MULT_X = 1;
-    const MULT_Y = 10;
-
-    const dx = p1.x - p2.x;
-    const dy = p1.y - p2.y;
-    return Math.sqrt(MULT_X * dx * dx + MULT_Y * dy * dy);
-  }
-
-  if (coord.length === 0) {
-    return null;
-  }
-
-  let closestIndex = 0;
-  let closestDistance = skewedDistance(coord[0], p);
-
-  for (let i = 1; i < coord.length; i++) {
-    const currentDistance = skewedDistance(coord[i], p);
-    if (currentDistance < closestDistance) {
-      closestIndex = i;
-      closestDistance = currentDistance;
-    }
-  }
-
-  return closestIndex;
-}
-
-// https://stackoverflow.com/a/6470794/8125485
-function arrayMove(arr: string[], fromIndex: number, toIndex: number) {
-  var element = arr[fromIndex];
-  arr.splice(fromIndex, 1);
-  arr.splice(toIndex, 0, element);
-}
-
-interface DraggableWordProps {
-  word: string;
-  color: string;
-  isDragged: boolean;
-  isClicked: boolean;
-  sendCoord: (_: Coordinate) => void;
-}
-
-const DraggableWord: React.FC<DraggableWordProps> = ({
-  word,
-  color,
-  isDragged,
-  isClicked,
-  sendCoord,
-}) => {
-  const componentRef: React.RefObject<HTMLDivElement> = useRef(null);
-
-  const getCenter = (div: DOMRect) => {
-    return { x: (div.left + div.right) / 2, y: (div.bottom + div.top) / 2 };
-  };
-
-  useEffect(() => {
-    sendCoord(getCenter(componentRef.current?.getBoundingClientRect()!));
-  });
-
-  return (
-    <div
-      draggable
-      className={`draggable mx-2 my-1 cursor-grab rounded-lg ${color}  px-2 py-1 shadow-lg
-                      ${isClicked ? " shadow-lg shadow-cyan-500/50" : ""}
-                      ${isDragged ? "bg-gray-300 opacity-50" : ""}
-      `}
-      ref={componentRef}
-    >
-      {word}
-    </div>
-  );
-};
-
-enum Hint {
-  Correct,
-  Incorrect,
-  Unknown,
-}
-
-const hint2color = (hint: Hint) => {
-  switch (hint) {
-    case Hint.Correct: {
-      return "border-2 bg-green-50 border-green-500";
-    }
-    case Hint.Unknown: {
-      return "border bg-white";
-    }
-    case Hint.Incorrect: {
-      return "border-2 bg-red-50 border-red-500";
-    }
-  }
-};
-
-interface PuzzleProps {
-  setCurrentSolution: React.Dispatch<React.SetStateAction<string[]>>;
-  getCurrentSolution: () => string[];
-  wordHints: (word: string, index: number) => Hint;
-}
-
-const Puzzle: React.FC<PuzzleProps> = ({
-  setCurrentSolution,
-  getCurrentSolution,
-  wordHints,
-}) => {
-  const [coord, setCoord] = useState<Coordinate[]>(
-    Array.from({ length: getCurrentSolution().length }, (_) => {
-      return { x: 0, y: 0 };
-    }),
-  );
-
-  const [draggedElIndex, setDraggedElIndex] = useState<number>(-1);
-  const [prevIndex, setPrevIndex] = useState<number>(-1);
-
-  const [clickedWordIndex, setClickedWordIndex] = useState<number | null>(null);
-
-  const dragStartHandle = (event: React.DragEvent) => {
-    const index = findClosestIndex(coord, {
-      x: event.clientX,
-      y: event.clientY,
-    })!;
-    setDraggedElIndex(index);
-  };
-
-  const onDragEndHandle = (_event: React.DragEvent) => {
-    setDraggedElIndex(-1);
-    setCurrentSolution(getCurrentSolution());
-  };
-
-  const onDragOverHandle = (event: React.DragEvent) => {
-    event.preventDefault();
-    const clientCoord = { x: event.clientX, y: event.clientY };
-
-    const closestWordIndex = findClosestIndex(coord, clientCoord);
-    if (closestWordIndex != null) {
-      if (
-        closestWordIndex == prevIndex ||
-        (draggedElIndex == prevIndex && draggedElIndex == closestWordIndex)
-      ) {
-      } else {
-        const newWords = getCurrentSolution().slice();
-        arrayMove(newWords, draggedElIndex, closestWordIndex);
-        setCurrentSolution(newWords);
-        setDraggedElIndex(closestWordIndex);
-        setPrevIndex(draggedElIndex);
-      }
-    }
-  };
-
-  const onClickHandle = (event: React.MouseEvent) => {
-    // TODO: Not ideal, but works ok. Improve in the future.
-    //       One problem with this approach is that a click
-    //       will highlight the word with the closest center
-    //       to the click (not the words that is being clicked).
-    // TODO: improve name
-    const index = findClosestIndex(coord, {
-      x: event.clientX,
-      y: event.clientY,
-    })!;
-
-    if (clickedWordIndex == null) {
-      setClickedWordIndex(index);
-    } else if (clickedWordIndex == index) {
-      setClickedWordIndex(null);
-    } else {
-      // TODO: move to a new function
-      // Two different words
-      const newWords = getCurrentSolution().slice();
-      newWords[index] = getCurrentSolution()[clickedWordIndex];
-      newWords[clickedWordIndex] = getCurrentSolution()[index];
-
-      setCurrentSolution(newWords);
-      setClickedWordIndex(null);
-    }
-  };
-
-  return (
-    <div
-      className="flex flex-wrap"
-      onDragStart={dragStartHandle}
-      onDragEnd={onDragEndHandle}
-      onDragOver={onDragOverHandle}
-      onClick={onClickHandle}
-    >
-      {getCurrentSolution().map((word, index) => {
-        return (
-          <DraggableWord
-            key={index}
-            word={word}
-            color={hint2color(wordHints(word, index))}
-            isClicked={index == clickedWordIndex}
-            isDragged={index == draggedElIndex}
-            sendCoord={(p: Coordinate) => {
-              var newCoord = coord;
-              newCoord[index] = p;
-              setCoord(newCoord);
-            }}
-          />
-        );
-      })}
-    </div>
-  );
-};
-
-// Inspired by [https://spin.atomicobject.com/collapse-component-react]
-const Collapse: React.FC<React.PropsWithChildren<{ isExpanded: boolean }>> = ({
-  isExpanded,
-  children,
-}) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [contentHeight, setContentHeight] = useState(0);
-
-  // TODO: do something about the magic constant
-  useEffect(() => {
-    if (ref.current) {
-      setContentHeight(ref.current.clientHeight + 50);
-    }
-  }, [children]);
-
-  // Thanks to [https://stackoverflow.com/a/69864970/8125485]
-  return (
-    <div
-      className="overflow-hidden transition-all delay-150 duration-300"
-      style={{
-        height: isExpanded ? contentHeight : 0,
-      }}
-    >
-      <div ref={ref}>{children}</div>
-    </div>
-  );
-};
-
-interface QuestionProp {
-  sentence: string;
-}
-
-const Question: React.FC<QuestionProp> = ({ sentence }) => {
-  return (
-    <div className="flex w-full flex-row justify-normal border-b py-2">
-      <div className="flex w-3/4 justify-center text-sm">{sentence}</div>
-      <div className="flex w-1/4 justify-end">
-        <button className="mx-2 h-10 rounded-md border bg-green-100 p-1">
-          Yes
-        </button>
-        <button className="mx-2 h-10 rounded-md border bg-red-100 p-1">
-          No
-        </button>
-      </div>
-    </div>
-  );
-};
+// const API_SERV = "https://de-puzzle-api.vercel.app";
+const API_SERV = "http://localhost:5174";
 
 function App() {
   // Store sentence's index in the database
@@ -341,17 +81,17 @@ function App() {
       </div>
       <Collapse isExpanded={isExpanded}>
         <div className="mx-2 flex-col justify-center rounded-2xl border bg-white p-7 text-xl font-medium text-blue-900 shadow-xl">
-          <Question
+          <Questions
             sentence={
               "Is this sentence a valuable addition to vocabulary building for intermediate German learners?"
             }
           />
-          <Question
+          <Questions
             sentence={
               "Does knowing this sentence aid in daily German conversations?"
             }
           />
-          <Question
+          <Questions
             sentence={
               "Is this sentence suitable for A1 or A2 level German learners?"
             }

@@ -26,7 +26,7 @@ mongoose.connect(process.env.MONGO_URL).then(() => {
 
 app.get("/", async (req: Request, res: Response) => {
   res.json({
-    version: "0.0.5",
+    version: "0.0.6",
   });
 });
 
