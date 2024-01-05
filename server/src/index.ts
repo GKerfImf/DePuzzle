@@ -1,65 +1,62 @@
+import { config } from "dotenv";
+config();
+
+import mongoose from "mongoose";
 import express, { Request, Response } from "express";
 import cors from "cors";
-
-enum Hint {
-  Correct,
-  Incorrect,
-  Unknown,
-}
+import TranslationPair from "./models/translation_pair";
+import shuffle from "./util/shuffle";
+import zip from "./util/zip";
+import Hint from "./util/hint";
 
 const app = express();
+app.use(cors({}));
 app.use(
   cors({
-    origin: ["https://de-puzzle.vercel.app/"],
+    origin: ["https://de-puzzle.vercel.app/", "http://localhost:5174/"],
     methods: ["POST", "GET"],
-    credentials: true,
   })
 );
 app.use(express.json());
-app.listen(5174);
 
-// TODO: fetch from db
-const sentenceOriginal =
-  "Die deutsche Küche ist für ihre Wurstwaren und Brotvarianten bekannt.";
+mongoose.connect(process.env.MONGO_URL).then(() => {
+  console.log("success!");
+  app.listen(5174);
+});
 
-// TODO: will be obtained via [deepl]
-const sentenceToTranslate =
-  "German cuisine is known for its sausages and bread varieties.";
-
-//
-const shuffle = (array: string[]) => {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-};
-
-//
-// https://gist.github.com/dev-thalizao/affaac253be5b5305e0faec3b650ba27
-function zip<S1, S2>(
-  firstCollection: Array<S1>,
-  lastCollection: Array<S2>
-): Array<[S1, S2]> {
-  const length = Math.min(firstCollection.length, lastCollection.length);
-  const zipped: Array<[S1, S2]> = [];
-
-  for (let index = 0; index < length; index++) {
-    zipped.push([firstCollection[index], lastCollection[index]]);
-  }
-
-  return zipped;
-}
-
-app.get("/main", (req: Request, res: Response) => {
+app.get("/", async (req: Request, res: Response) => {
   res.json({
-    to_translate: sentenceToTranslate,
-    shuffled_words: shuffle(sentenceOriginal.split(" ")),
+    version: "0.0.5",
   });
 });
 
-app.post("/main", (req: Request, res: Response) => {
-  const correctWordOrder = sentenceOriginal.split(" ");
+app.get("/main", async (req: Request, res: Response) => {
+  const [index, original, translated] = await TranslationPair.countDocuments()
+    .exec()
+    .then((count: number) => {
+      return Math.floor(Math.random() * count);
+    })
+    .then(async (index) => {
+      const pair = await TranslationPair.findOne().skip(index);
+      return [index, pair.original_sentence, pair.translated_sentence];
+    });
+
+  res.json({
+    problem_id: index,
+    to_translate: translated,
+    shuffled_words: shuffle((original as string).split(" ")),
+  });
+});
+
+app.post("/main", async (req: Request, res: Response) => {
+  const correctWordOrder = await TranslationPair.findOne()
+    .skip(req.body.sentence_index)
+    .then((pair) => {
+      return pair.original_sentence;
+    })
+    .then((sentence) => {
+      return sentence.split(" ");
+    });
 
   const currentSolution: string[] = req.body.solution;
 

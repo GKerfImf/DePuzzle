@@ -1,6 +1,9 @@
 import React from "react";
 import { useState, useRef, useEffect, useCallback } from "react";
 
+const API_SERV = "https://de-puzzle-api.vercel.app";
+// const API_SERV = "http://localhost:5174";
+
 interface Coordinate {
   x: number;
   y: number;
@@ -265,6 +268,9 @@ const Question: React.FC<QuestionProp> = ({ sentence }) => {
 };
 
 function App() {
+  // Store sentence's index in the database
+  const [sentenceIndex, setSentenceIndex] = useState(-1);
+
   // English sentence that the user has to translate to German
   const [sentenceToTranslate, setSentenceToTranslate] = useState("");
 
@@ -278,9 +284,10 @@ function App() {
 
   useEffect(() => {
     async function fetchProblem() {
-      const translationProblem = await fetch(
-        "https://de-puzzle-api.vercel.app/main",
-      ).then((response) => response.json());
+      const translationProblem = await fetch(`${API_SERV}/main`).then(
+        (response) => response.json(),
+      );
+      setSentenceIndex(translationProblem.problem_id);
       setSentenceToTranslate(translationProblem.to_translate);
       setCurrentSolution(translationProblem.shuffled_words);
     }
@@ -295,9 +302,10 @@ function App() {
   };
 
   const submitOnClick = async () => {
-    const result = await fetch("https://de-puzzle-api.vercel.app/main", {
+    const result = await fetch(`${API_SERV}/main`, {
       method: "POST",
       body: JSON.stringify({
+        sentence_index: sentenceIndex,
         solution: currentSolution,
         known_hints: JSON.stringify(Object.fromEntries(currentHints)),
       }),
