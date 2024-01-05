@@ -1,13 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
+import React from "react";
+import { useState, useEffect } from "react";
 import Puzzle from "./Puzzle";
-import Questions from "./Questions";
-import Collapse from "./Collapse";
 import Hint from "./util/hint";
 
-// const API_SERV = "https://de-puzzle-api.vercel.app";
-const API_SERV = "http://localhost:5174";
+const API_SERV = "https://de-puzzle-api.vercel.app";
+// const API_SERV = "http://localhost:5174";
 
 function App() {
+  // State that tracks whether the current problem is being solved
+  const [beingSolved, setBeingSolved] = useState(true);
+
   // Store sentence's index in the database
   const [sentenceIndex, setSentenceIndex] = useState(-1);
 
@@ -21,19 +23,7 @@ function App() {
   const [currentHints, setCurrentHints] = useState<Map<string, number>>(
     new Map(),
   );
-
-  useEffect(() => {
-    async function fetchProblem() {
-      const translationProblem = await fetch(`${API_SERV}/main`).then(
-        (response) => response.json(),
-      );
-      setSentenceIndex(translationProblem.problem_id);
-      setSentenceToTranslate(translationProblem.to_translate);
-      setCurrentSolution(translationProblem.shuffled_words);
-    }
-    fetchProblem();
-  }, []);
-
+  //Function that converts a word and its position to a hint
   const getHint = (word: string, index: number) => {
     if (currentHints.has(JSON.stringify({ word: word, index: index }))) {
       return currentHints.get(JSON.stringify({ word: word, index: index }))!;
@@ -41,8 +31,29 @@ function App() {
     return Hint.Unknown;
   };
 
+  useEffect(() => {
+    fetchNewProblem();
+  }, []);
+
+  async function fetchNewProblem() {
+    const translationProblem = await fetch(`${API_SERV}/main`).then(
+      (response) => response.json(),
+    );
+    setSentenceIndex(translationProblem.problem_id);
+    setSentenceToTranslate(translationProblem.to_translate);
+    setCurrentSolution(translationProblem.shuffled_words);
+    setCurrentHints(new Map());
+  }
+
+  function updateHints(hints: string) {
+    const newHints: Map<string, number> = new Map(
+      Object.entries(JSON.parse(hints)),
+    );
+    setCurrentHints(newHints);
+  }
+
   const submitOnClick = async () => {
-    const result = await fetch(`${API_SERV}/main`, {
+    const response = await fetch(`${API_SERV}/main`, {
       method: "POST",
       body: JSON.stringify({
         sentence_index: sentenceIndex,
@@ -53,16 +64,24 @@ function App() {
         "Content-Type": "application/json",
       },
     }).then((response) => response.json());
-    const newHints: Map<string, number> = new Map(
-      Object.entries(JSON.parse(result.hints)),
-    );
-    setCurrentHints(newHints);
+
+    // Update hints regardless of the result to make the words green
+    updateHints(response.hints);
+
+    if (response.isCorrect) {
+      setBeingSolved(!beingSolved);
+      // TODO: celebrate
+    }
   };
 
-  const [isExpanded, setIsExpanded] = useState(false);
-  const toggleIsExpanded = useCallback(() => {
-    setIsExpanded((isExpanded) => !isExpanded);
-  }, []);
+  const giveUpOnClick = () => {
+    setBeingSolved(!beingSolved);
+  };
+
+  const nextProblemOnClick = () => {
+    setBeingSolved(!beingSolved);
+    fetchNewProblem();
+  };
 
   return (
     <div className="h-full w-full max-w-xl flex-col pt-10 font-mono">
@@ -75,48 +94,40 @@ function App() {
           getCurrentSolution={() => {
             return currentSolution;
           }}
-          // shuffledWords={currentSolution}
           setCurrentSolution={setCurrentSolution}
         />
       </div>
-      <Collapse isExpanded={isExpanded}>
-        <div className="mx-2 flex-col justify-center rounded-2xl border bg-white p-7 text-xl font-medium text-blue-900 shadow-xl">
-          <Questions
-            sentence={
-              "Is this sentence a valuable addition to vocabulary building for intermediate German learners?"
-            }
-          />
-          <Questions
-            sentence={
-              "Does knowing this sentence aid in daily German conversations?"
-            }
-          />
-          <Questions
-            sentence={
-              "Is this sentence suitable for A1 or A2 level German learners?"
-            }
-          />
-        </div>
-      </Collapse>
-      <Collapse isExpanded={!isExpanded}>
-        <div className="flex justify-end">
-          <div>
-            <button
-              disabled
-              className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
-              onClick={toggleIsExpanded}
-            >
-              Give up
-            </button>
-            <button
-              className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
-              onClick={submitOnClick}
-            >
-              Submit
-            </button>
-          </div>
-        </div>
-      </Collapse>
+      <div className="flex justify-end">
+        {beingSolved
+          ? [
+              <button
+                id={"GiveUpButton"}
+                className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
+                onClick={giveUpOnClick}
+              >
+                Give up
+              </button>,
+              <button
+                id={"SubmitButton"}
+                className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
+                onClick={submitOnClick}
+              >
+                Submit
+              </button>,
+            ]
+          : null}
+        {!beingSolved
+          ? [
+              <button
+                id={"NextProblemButton"}
+                className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
+                onClick={nextProblemOnClick}
+              >
+                Next Problem
+              </button>,
+            ]
+          : null}
+      </div>
     </div>
   );
 }

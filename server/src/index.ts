@@ -60,14 +60,12 @@ app.post("/main", async (req: Request, res: Response) => {
 
   const currentSolution: string[] = req.body.solution;
 
-  // TODO: handle correct solution
-
   const currentHints: Map<string, number> = new Map(
     Object.entries(JSON.parse(req.body.known_hints))
   );
 
+  var isCorrect = true;
   const newHints = new Map(currentHints);
-
   zip(currentSolution, correctWordOrder).forEach(
     (word: [string, string], index: number) => {
       if (word[0] == word[1]) {
@@ -76,6 +74,7 @@ app.post("/main", async (req: Request, res: Response) => {
           Hint.Correct
         );
       } else {
+        isCorrect = false;
         newHints.set(
           JSON.stringify({ word: word[0], index: index }),
           Hint.Incorrect
@@ -85,7 +84,7 @@ app.post("/main", async (req: Request, res: Response) => {
   );
 
   res.json({
-    result: "Not a correct solution",
+    isCorrect: isCorrect,
     hints: JSON.stringify(Object.fromEntries(newHints)),
   });
 });

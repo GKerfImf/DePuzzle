@@ -34,7 +34,7 @@ mongoose_1.default.connect(process.env.MONGO_URL).then(() => {
 });
 app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.json({
-        version: "0.0.5",
+        version: "0.0.6",
     });
 }));
 app.get("/main", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -63,19 +63,20 @@ app.post("/main", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         return sentence.split(" ");
     });
     const currentSolution = req.body.solution;
-    // TODO: handle correct solution
     const currentHints = new Map(Object.entries(JSON.parse(req.body.known_hints)));
+    var isCorrect = true;
     const newHints = new Map(currentHints);
     (0, zip_1.default)(currentSolution, correctWordOrder).forEach((word, index) => {
         if (word[0] == word[1]) {
             newHints.set(JSON.stringify({ word: word[0], index: index }), hint_1.default.Correct);
         }
         else {
+            isCorrect = false;
             newHints.set(JSON.stringify({ word: word[0], index: index }), hint_1.default.Incorrect);
         }
     });
     res.json({
-        result: "Not a correct solution",
+        isCorrect: isCorrect,
         hints: JSON.stringify(Object.fromEntries(newHints)),
     });
 }));
