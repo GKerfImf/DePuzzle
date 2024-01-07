@@ -3,12 +3,18 @@ import { useState, useEffect } from "react";
 import Puzzle from "./Puzzle";
 import Hint from "./util/hint";
 
+enum ProblemStatus {
+  Solving,
+  Correct,
+  Incorrect,
+}
+
 const API_SERV = "https://de-puzzle-api.vercel.app";
 // const API_SERV = "http://localhost:5174";
 
 function App() {
-  // State that tracks whether the current problem is being solved
-  const [beingSolved, setBeingSolved] = useState(true);
+  // Tracks whether the current problem is being solved, solved correctly, or solved incorrectly
+  const [problemStatus, setProblemStatus] = useState(ProblemStatus.Solving);
 
   // Store sentence's index in the database
   const [sentenceIndex, setSentenceIndex] = useState(-1);
@@ -69,26 +75,42 @@ function App() {
     updateHints(response.hints);
 
     if (response.isCorrect) {
-      setBeingSolved(!beingSolved);
-      // TODO: celebrate
+      setProblemStatus(ProblemStatus.Correct);
     }
   };
 
   const giveUpOnClick = () => {
-    setBeingSolved(!beingSolved);
+    setProblemStatus(ProblemStatus.Incorrect);
   };
 
   const nextProblemOnClick = () => {
-    setBeingSolved(!beingSolved);
+    setProblemStatus(ProblemStatus.Solving);
     fetchNewProblem();
+  };
+
+  // TODO: can this be done with useContext?
+  // Based on the problem status, Sets the color for component borders
+  const getBorderColor = () => {
+    switch (problemStatus) {
+      case ProblemStatus.Solving:
+        return "border";
+      case ProblemStatus.Correct:
+        return "border-2 border-green-500";
+      case ProblemStatus.Incorrect:
+        return "border-2 border-red-500";
+    }
   };
 
   return (
     <div className="h-full w-full max-w-xl flex-col pt-10 font-mono">
-      <div className="m-2 flex justify-center rounded-2xl border bg-white p-10 text-xl font-medium text-blue-900 shadow-xl">
+      <div
+        className={`${getBorderColor()} m-2 flex justify-center rounded-2xl bg-white p-10 text-xl font-medium text-blue-900 shadow-xl`}
+      >
         {sentenceToTranslate}
       </div>
-      <div className="m-2 flex justify-center rounded-2xl border bg-white p-8 shadow-xl">
+      <div
+        className={`${getBorderColor()} m-2 flex justify-center rounded-2xl bg-white p-8 shadow-xl`}
+      >
         <Puzzle
           wordHints={getHint}
           getCurrentSolution={() => {
@@ -98,7 +120,7 @@ function App() {
         />
       </div>
       <div className="flex justify-end">
-        {beingSolved
+        {problemStatus == ProblemStatus.Solving
           ? [
               <button
                 id={"GiveUpButton"}
@@ -116,7 +138,7 @@ function App() {
               </button>,
             ]
           : null}
-        {!beingSolved
+        {problemStatus != ProblemStatus.Solving
           ? [
               <button
                 id={"NextProblemButton"}
