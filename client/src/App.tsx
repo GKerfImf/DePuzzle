@@ -2,6 +2,7 @@ import React from "react";
 import { useState, useEffect } from "react";
 import Puzzle from "./Puzzle";
 import Hint from "./util/hint";
+import { Button } from "@/components/ui/button";
 
 enum ProblemStatus {
   Solving,
@@ -102,53 +103,67 @@ function App() {
   };
 
   return (
-    <div className="h-full w-full max-w-xl flex-col pt-10 font-mono">
-      <div
-        className={`${getBorderColor()} m-2 flex justify-center rounded-2xl bg-white p-10 text-xl font-medium text-blue-900 shadow-xl`}
-      >
-        {sentenceToTranslate}
-      </div>
-      <div
-        className={`${getBorderColor()} m-2 flex justify-center rounded-2xl bg-white p-8 shadow-xl`}
-      >
-        <Puzzle
-          wordHints={getHint}
-          getCurrentSolution={() => {
-            return currentSolution;
-          }}
-          setCurrentSolution={setCurrentSolution}
-        />
-      </div>
-      <div className="flex justify-end">
-        {problemStatus == ProblemStatus.Solving
-          ? [
-              <button
-                id={"GiveUpButton"}
-                className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
-                onClick={giveUpOnClick}
-              >
-                Give up
-              </button>,
-              <button
-                id={"SubmitButton"}
-                className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
-                onClick={submitOnClick}
-              >
-                Submit
-              </button>,
-            ]
-          : null}
-        {problemStatus != ProblemStatus.Solving
-          ? [
-              <button
-                id={"NextProblemButton"}
-                className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
-                onClick={nextProblemOnClick}
-              >
-                Next Problem
-              </button>,
-            ]
-          : null}
+    // <div className="flex h-full w-screen max-w-xl flex-col justify-center pt-10 font-mono">
+    <div className="felx flex-col justify-center font-mono">
+      <header className=" mb-6 flex w-screen justify-between border-b p-3">
+        <span className="text-2xl">DePuzzle</span>
+        <div className="">
+          <Button className="mx-1" variant="outline">
+            Sign Up
+          </Button>
+          <Button className="mx-1" variant="outline">
+            Sign In
+          </Button>
+        </div>
+      </header>
+      <div className="mx-auto flex max-w-xl flex-col items-center">
+        <div
+          className={`${getBorderColor()} m-2 w-full rounded-2xl bg-white p-10 text-xl font-medium text-blue-900 shadow-xl`}
+        >
+          {sentenceToTranslate}
+        </div>
+        <div
+          className={`${getBorderColor()} m-2 flex w-full justify-center rounded-2xl bg-white p-8 shadow-xl`}
+        >
+          <Puzzle
+            wordHints={getHint}
+            getCurrentSolution={() => {
+              return currentSolution;
+            }}
+            setCurrentSolution={setCurrentSolution}
+          />
+        </div>
+        <div className="flex w-full justify-end">
+          {problemStatus == ProblemStatus.Solving
+            ? [
+                <button
+                  id={"GiveUpButton"}
+                  className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
+                  onClick={giveUpOnClick}
+                >
+                  Give up
+                </button>,
+                <button
+                  id={"SubmitButton"}
+                  className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
+                  onClick={submitOnClick}
+                >
+                  Submit
+                </button>,
+              ]
+            : null}
+          {problemStatus != ProblemStatus.Solving
+            ? [
+                <button
+                  id={"NextProblemButton"}
+                  className="m-2 rounded-lg bg-indigo-500 p-2 text-white"
+                  onClick={nextProblemOnClick}
+                >
+                  Next Problem
+                </button>,
+              ]
+            : null}
+        </div>
       </div>
     </div>
   );
