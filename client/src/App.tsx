@@ -107,11 +107,20 @@ function App() {
     <div className="felx flex-col justify-center font-mono">
       <Header />
       <div className="mx-auto flex max-w-xl flex-col items-center">
-        <div
-          className={`${getBorderColor()} m-2 w-full rounded-2xl bg-white p-10 text-xl font-medium text-blue-900 shadow-xl`}
-        >
-          {sentenceToTranslate}
+        {/*  */}
+
+        <div className={`m-2 w-full rounded-2xl border bg-white shadow-xl`}>
+          <p className="px-10 pb-6 pt-8 text-xl font-medium text-blue-900">
+            {sentenceToTranslate}
+          </p>
+          <div className="flex w-full justify-between px-4 pb-2 font-mono text-xs text-gray-400">
+            <p className="">Elo: 1600</p>
+            <p className="">From: GPT-4</p>
+          </div>
         </div>
+
+        {/*  */}
+
         <div
           className={`${getBorderColor()} m-2 flex w-full justify-center rounded-2xl bg-white p-8 shadow-xl`}
         >
