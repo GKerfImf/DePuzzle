@@ -21,6 +21,7 @@ const translation_pair_1 = __importDefault(require("./models/translation_pair"))
 const shuffle_1 = __importDefault(require("./util/shuffle"));
 const zip_1 = __importDefault(require("./util/zip"));
 const hint_1 = __importDefault(require("./util/hint"));
+const clerk_sdk_node_1 = require("@clerk/clerk-sdk-node");
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)({}));
 app.use((0, cors_1.default)({
@@ -31,6 +32,10 @@ app.use(express_1.default.json());
 mongoose_1.default.connect(process.env.MONGO_URL).then(() => {
     console.log("success!");
     app.listen(5174);
+});
+app.get("/protected-endpoint", (0, clerk_sdk_node_1.ClerkExpressWithAuth)({}), (req, res) => {
+    console.log("/GET @ protected-endpoint");
+    res.json(req.auth);
 });
 app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.json({

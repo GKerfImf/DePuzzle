@@ -8,6 +8,7 @@ import TranslationPair from "./models/translation_pair";
 import shuffle from "./util/shuffle";
 import zip from "./util/zip";
 import Hint from "./util/hint";
+import { WithAuthProp, ClerkExpressWithAuth } from "@clerk/clerk-sdk-node";
 
 const app = express();
 app.use(cors({}));
@@ -23,6 +24,15 @@ mongoose.connect(process.env.MONGO_URL).then(() => {
   console.log("success!");
   app.listen(5174);
 });
+
+app.get(
+  "/protected-endpoint",
+  ClerkExpressWithAuth({}),
+  (req: WithAuthProp<Request>, res) => {
+    console.log("/GET @ protected-endpoint");
+    res.json(req.auth);
+  }
+);
 
 app.get("/", async (req: Request, res: Response) => {
   res.json({
