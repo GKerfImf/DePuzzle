@@ -4,7 +4,7 @@ config();
 import mongoose from "mongoose";
 import express, { Request, Response } from "express";
 import cors from "cors";
-import TranslationPair from "./models/translation_pair";
+import Puzzle from "./models/puzzle";
 import shuffle from "./util/shuffle";
 import zip from "./util/zip";
 import Hint from "./util/hint";
@@ -25,6 +25,39 @@ mongoose.connect(process.env.MONGO_URL).then(() => {
   app.listen(5174);
 });
 
+// ----------------------------------------------------------------
+
+app.get("/add-dummy-puzzles", async (req: Request, res: Response) => {
+  const puzzles = [
+    [
+      "Guten Morgen, mein Name ist Klaus",
+      "Good morning, my name is Klaus",
+      1550,
+    ],
+    ["Ich bin Lehrer von Beruf", "I am a teacher by profession", 1600],
+  ];
+
+  puzzles.forEach(async (puzzle: string[]) => {
+    const newPair = new Puzzle({
+      original_sentence: {
+        sentence: puzzle[0],
+        language: "de",
+        taken_from: "GPT-4",
+      },
+      translated_sentence: {
+        sentence: puzzle[1],
+        language: "en",
+        taken_from: "DeepL",
+      },
+      elo: puzzle[2],
+      games_history: [],
+      polls: [],
+    });
+    await newPair.save();
+  });
+  res.json("done");
+});
+
 app.get(
   "/protected-endpoint",
   ClerkExpressWithAuth({}),
@@ -36,38 +69,48 @@ app.get(
 
 app.get("/", async (req: Request, res: Response) => {
   res.json({
-    version: "0.0.6",
+    version: "0.0.7",
   });
 });
 
-app.get("/main", async (req: Request, res: Response) => {
-  const [index, original, translated] = await TranslationPair.countDocuments()
-    .exec()
-    .then((count: number) => {
-      return Math.floor(Math.random() * count);
-    })
-    .then(async (index) => {
-      const pair = await TranslationPair.findOne().skip(index);
-      return [index, pair.original_sentence, pair.translated_sentence];
-    });
+async function getPuzzleById(objectId: string) {
+  return await Puzzle.findById(objectId);
+}
 
-  res.json({
-    problem_id: index,
-    to_translate: translated,
-    shuffled_words: shuffle((original as string).split(" ")),
-  });
+async function getPuzzleIdsWithElo(min: number, max: number) {
+  return await Puzzle.find(
+    {
+      elo: { $gte: min, $lte: max },
+    },
+    "_id"
+  );
+}
+
+async function getRandomPuzzleWithElo(min: number, max: number) {
+  const puzzleIDs = await getPuzzleIdsWithElo(min, max);
+  const randomID = Math.floor(Math.random() * puzzleIDs.length);
+  const randomPuzzle = await getPuzzleById(puzzleIDs[randomID].id);
+  const puzzle = {
+    id: randomPuzzle.id,
+    translated_sentence: randomPuzzle.translated_sentence,
+    shuffled_sentence: {
+      sentence: shuffle(randomPuzzle.original_sentence.sentence.split(" ")),
+      language: randomPuzzle.original_sentence.language,
+      taken_from: randomPuzzle.original_sentence.taken_from,
+    },
+    elo: randomPuzzle.elo,
+  };
+  return puzzle;
+}
+
+app.get("/get-new-puzzle", async (req: Request, res: Response) => {
+  res.json(await getRandomPuzzleWithElo(1400, 1600));
 });
 
 app.post("/main", async (req: Request, res: Response) => {
-  const correctWordOrder = await TranslationPair.findOne()
-    .skip(req.body.sentence_index)
-    .then((pair) => {
-      return pair.original_sentence;
-    })
-    .then((sentence) => {
-      return sentence.split(" ");
-    });
-
+  const puzzle = await getPuzzleById(req.body.sentence_index);
+  const correctWordOrder: string[] =
+    puzzle.original_sentence.sentence.split(" ");
   const currentSolution: string[] = req.body.solution;
 
   const currentHints: Map<string, number> = new Map(

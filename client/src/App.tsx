@@ -14,11 +14,15 @@ const API_SERV = "https://de-puzzle-api.vercel.app";
 // const API_SERV = "http://localhost:5174";
 
 function App() {
-  // Tracks whether the current problem is being solved, solved correctly, or solved incorrectly
-  const [problemStatus, setProblemStatus] = useState(ProblemStatus.Solving);
+  // Tracks whether the current puzzle is being solved, solved correctly, or solved incorrectly
+  const [puzzleStatus, setPuzzleStatus] = useState(ProblemStatus.Solving);
 
-  // Store sentence's index in the database
-  const [sentenceIndex, setSentenceIndex] = useState(-1);
+  // Remember puzzle's ID to check the solution later
+  const [puzzleID, setPuzzleID] = useState(-1);
+
+  // Remeber puzzle's origin (e.g., GPT-4) and ELO rating
+  const [puzzleFrom, setPuzzleFrom] = useState("");
+  const [puzzleElo, setPuzzleElo] = useState("");
 
   // English sentence that the user has to translate to German
   const [sentenceToTranslate, setSentenceToTranslate] = useState("");
@@ -43,12 +47,14 @@ function App() {
   }, []);
 
   async function fetchNewProblem() {
-    const translationProblem = await fetch(`${API_SERV}/main`).then(
-      (response) => response.json(),
+    const puzzle = await fetch(`${API_SERV}/get-new-puzzle`).then((response) =>
+      response.json(),
     );
-    setSentenceIndex(translationProblem.problem_id);
-    setSentenceToTranslate(translationProblem.to_translate);
-    setCurrentSolution(translationProblem.shuffled_words);
+    setPuzzleID(puzzle.id);
+    setPuzzleElo(puzzle.elo);
+    setPuzzleFrom(puzzle.shuffled_sentence.taken_from);
+    setSentenceToTranslate(puzzle.translated_sentence.sentence);
+    setCurrentSolution(puzzle.shuffled_sentence.sentence);
     setCurrentHints(new Map());
   }
 
@@ -63,7 +69,7 @@ function App() {
     const response = await fetch(`${API_SERV}/main`, {
       method: "POST",
       body: JSON.stringify({
-        sentence_index: sentenceIndex,
+        sentence_index: puzzleID,
         solution: currentSolution,
         known_hints: JSON.stringify(Object.fromEntries(currentHints)),
       }),
@@ -76,23 +82,23 @@ function App() {
     updateHints(response.hints);
 
     if (response.isCorrect) {
-      setProblemStatus(ProblemStatus.Correct);
+      setPuzzleStatus(ProblemStatus.Correct);
     }
   };
 
   const giveUpOnClick = () => {
-    setProblemStatus(ProblemStatus.Incorrect);
+    setPuzzleStatus(ProblemStatus.Incorrect);
   };
 
   const nextProblemOnClick = () => {
-    setProblemStatus(ProblemStatus.Solving);
+    setPuzzleStatus(ProblemStatus.Solving);
     fetchNewProblem();
   };
 
   // TODO: can this be done with useContext?
   // Based on the problem status, Sets the color for component borders
   const getBorderColor = () => {
-    switch (problemStatus) {
+    switch (puzzleStatus) {
       case ProblemStatus.Solving:
         return "border";
       case ProblemStatus.Correct:
@@ -108,14 +114,13 @@ function App() {
       <Header />
       <div className="mx-auto flex max-w-xl flex-col items-center">
         {/*  */}
-
         <div className={`m-2 w-full rounded-2xl border bg-white shadow-xl`}>
           <p className="px-10 pb-6 pt-8 text-xl font-medium text-blue-900">
             {sentenceToTranslate}
           </p>
           <div className="flex w-full justify-between px-4 pb-2 font-mono text-xs text-gray-400">
-            <p className="">Elo: 1600</p>
-            <p className="">From: GPT-4</p>
+            <p className="">Elo: {puzzleElo}</p>
+            <p className="">From: {puzzleFrom}</p>
           </div>
         </div>
 
@@ -133,7 +138,7 @@ function App() {
           />
         </div>
         <div className="flex w-full justify-end">
-          {problemStatus == ProblemStatus.Solving
+          {puzzleStatus == ProblemStatus.Solving
             ? [
                 <button
                   id={"GiveUpButton"}
@@ -151,7 +156,7 @@ function App() {
                 </button>,
               ]
             : null}
-          {problemStatus != ProblemStatus.Solving
+          {puzzleStatus != ProblemStatus.Solving
             ? [
                 <button
                   id={"NextProblemButton"}
