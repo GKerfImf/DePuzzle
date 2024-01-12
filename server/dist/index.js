@@ -18,6 +18,7 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const puzzle_1 = __importDefault(require("./models/puzzle"));
+const user_1 = __importDefault(require("./models/user"));
 const shuffle_1 = __importDefault(require("./util/shuffle"));
 const zip_1 = __importDefault(require("./util/zip"));
 const hint_1 = __importDefault(require("./util/hint"));
@@ -58,6 +59,18 @@ app.get("/add-dummy-puzzles", (req, res) => __awaiter(void 0, void 0, void 0, fu
             elo: puzzle[2],
             games_history: [],
             polls: [],
+        });
+        yield newPair.save();
+    }));
+    res.json("done");
+}));
+app.get("/add-dummy-users", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const users = [1550, 1400];
+    users.forEach((user, index) => __awaiter(void 0, void 0, void 0, function* () {
+        const newPair = new user_1.default({
+            _id: index,
+            rating: user,
+            games_history: [],
         });
         yield newPair.save();
     }));

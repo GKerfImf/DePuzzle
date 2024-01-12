@@ -15,6 +15,7 @@ const RatingSchema = new Schema({
     vol: Number,
 });
 exports.RatingSchema = RatingSchema;
+// TODO: maybe it should include IDs of opponents
 // To challenge users with questions appropriate to their language level, we
 // use the Glicko-2 scale for both puzzles and users.
 const GameSchema = new Schema({

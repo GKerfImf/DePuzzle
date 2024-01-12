@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import express, { Request, Response } from "express";
 import cors from "cors";
 import Puzzle from "./models/puzzle";
+import User from "./models/user";
 import shuffle from "./util/shuffle";
 import zip from "./util/zip";
 import Hint from "./util/hint";
@@ -52,6 +53,20 @@ app.get("/add-dummy-puzzles", async (req: Request, res: Response) => {
       elo: puzzle[2],
       games_history: [],
       polls: [],
+    });
+    await newPair.save();
+  });
+  res.json("done");
+});
+
+app.get("/add-dummy-users", async (req: Request, res: Response) => {
+  const users = [1550, 1400];
+
+  users.forEach(async (user: number, index: number) => {
+    const newPair = new User({
+      _id: index,
+      rating: user,
+      games_history: [],
     });
     await newPair.save();
   });

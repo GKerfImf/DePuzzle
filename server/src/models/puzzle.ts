@@ -44,7 +44,7 @@ const PuzzleSchema = new Schema(
     translated_sentence: SentenceSchema,
 
     // The difficulty of solving the puzzle estimated via Glicko-2
-    elo: Number,
+    elo: Number, // TODO: rename to "rating"
     games_history: [GameSchema],
 
     // The set of polls for the puzzle
