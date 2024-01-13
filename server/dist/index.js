@@ -76,20 +76,11 @@ app.get("/add-dummy-users", (req, res) => __awaiter(void 0, void 0, void 0, func
     }));
     res.json("done");
 }));
-app.get("/protected-endpoint", (0, clerk_sdk_node_1.ClerkExpressWithAuth)({}), (req, res) => {
-    console.log("/GET @ protected-endpoint");
-    res.json(req.auth);
-});
 app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.json({
         version: "0.0.7",
     });
 }));
-function getPuzzleById(objectId) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return yield puzzle_1.default.findById(objectId);
-    });
-}
 function getPuzzleIdsWithElo(min, max) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield puzzle_1.default.find({
@@ -101,7 +92,7 @@ function getRandomPuzzleWithElo(min, max) {
     return __awaiter(this, void 0, void 0, function* () {
         const puzzleIDs = yield getPuzzleIdsWithElo(min, max);
         const randomID = Math.floor(Math.random() * puzzleIDs.length);
-        const randomPuzzle = yield getPuzzleById(puzzleIDs[randomID].id);
+        const randomPuzzle = yield puzzle_1.default.findById(puzzleIDs[randomID].id);
         const puzzle = {
             id: randomPuzzle.id,
             translated_sentence: randomPuzzle.translated_sentence,
@@ -118,8 +109,16 @@ function getRandomPuzzleWithElo(min, max) {
 app.get("/get-new-puzzle", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.json(yield getRandomPuzzleWithElo(1400, 1600));
 }));
-app.post("/main", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const puzzle = yield getPuzzleById(req.body.sentence_index);
+app.get("/get-new-puzzle-auth", (0, clerk_sdk_node_1.ClerkExpressWithAuth)({}), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_1.default.findById(req.auth.userId);
+    if (!user) {
+        res.status(404).send({ error: "User is not found" });
+        throw Error("User is not found");
+    }
+    res.json(yield getRandomPuzzleWithElo(user.rating - 300, user.rating + 300));
+}));
+const checkPuzzle = (req) => __awaiter(void 0, void 0, void 0, function* () {
+    const puzzle = yield puzzle_1.default.findById(req.body.sentence_index);
     const correctWordOrder = puzzle.original_sentence.sentence.split(" ");
     const currentSolution = req.body.solution;
     const currentHints = new Map(Object.entries(JSON.parse(req.body.known_hints)));
@@ -134,9 +133,55 @@ app.post("/main", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             newHints.set(JSON.stringify({ word: word[0], index: index }), hint_1.default.Incorrect);
         }
     });
-    res.json({
+    return {
         isCorrect: isCorrect,
         hints: JSON.stringify(Object.fromEntries(newHints)),
-    });
+    };
+});
+app.post("/check-puzzle", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield checkPuzzle(req);
+    res.json(result);
+}));
+app.post("/check-puzzle-auth", (0, clerk_sdk_node_1.ClerkExpressWithAuth)({}), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield checkPuzzle(req);
+    const user = yield user_1.default.findById(req.auth.userId);
+    if (!user) {
+        res.status(404).send({ error: "User is not found" });
+        throw Error("User is not found");
+    }
+    const puzzle = yield puzzle_1.default.findById(req.body.sentence_index);
+    if (!puzzle) {
+        res.status(404).send({ error: "Puzzle is not found" });
+        throw Error("Puzzle is not found");
+    }
+    if (result.isCorrect) {
+        user.rating += 10;
+        puzzle.elo -= 10;
+    }
+    else {
+        user.rating -= 10;
+        puzzle.elo += 10;
+    }
+    user.save();
+    puzzle.save();
+    res.json(result);
+}));
+// Just to make sure that all users are in [User] collection
+app.post("/say-hi", (0, clerk_sdk_node_1.ClerkExpressWithAuth)({}), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_1.default.exists({ _id: req.auth.userId });
+    if (user == null) {
+        const newUser = new user_1.default({
+            _id: req.auth.userId,
+            rating: 1500,
+        });
+        yield newUser.save();
+    }
+    res.json("hi");
+}));
+app.get("/user-elo", (0, clerk_sdk_node_1.ClerkExpressWithAuth)({}), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_1.default.findById(req.auth.userId);
+    if (!user)
+        res.status(404).send({ error: "User is not found" });
+    res.json(user.rating);
 }));
 //# sourceMappingURL=index.js.map
