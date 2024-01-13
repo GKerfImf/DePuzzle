@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Puzzle from "./Puzzle";
 import Hint from "./util/hint";
 import Header from "./components/header";
+import { useSession } from "@clerk/clerk-react";
 
 enum ProblemStatus {
   Solving,
@@ -14,8 +15,10 @@ const API_SERV = "https://de-puzzle-api.vercel.app";
 // const API_SERV = "http://localhost:5174";
 
 function App() {
+  const { session, isSignedIn, isLoaded } = useSession();
+
   // Tracks whether the current puzzle is being solved, solved correctly, or solved incorrectly
-  const [puzzleStatus, setPuzzleStatus] = useState(ProblemStatus.Solving);
+  const [puzzleStatus, setPuzzleStatus] = useState(ProblemStatus.Incorrect);
 
   // Remember puzzle's ID to check the solution later
   const [puzzleID, setPuzzleID] = useState(-1);
@@ -42,20 +45,49 @@ function App() {
     return Hint.Unknown;
   };
 
+  // If user does not exist, add one to the database
   useEffect(() => {
-    fetchNewProblem();
-  }, []);
+    const sayHi = async () => {
+      const response = await fetch(`${API_SERV}/say-hi`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await session!.getToken()}`,
+        },
+      }).then((response) => response.json());
+
+      return response;
+    };
+    if (isLoaded && isSignedIn) {
+      sayHi();
+    }
+  }, [isLoaded, isSignedIn]);
 
   async function fetchNewProblem() {
-    const puzzle = await fetch(`${API_SERV}/get-new-puzzle`).then((response) =>
-      response.json(),
-    );
-    setPuzzleID(puzzle.id);
-    setPuzzleElo(puzzle.elo);
-    setPuzzleFrom(puzzle.shuffled_sentence.taken_from);
-    setSentenceToTranslate(puzzle.translated_sentence.sentence);
-    setCurrentSolution(puzzle.shuffled_sentence.sentence);
-    setCurrentHints(new Map());
+    const setupPuzzle = (puzzle: any) => {
+      setPuzzleID(puzzle.id);
+      setPuzzleElo(puzzle.elo);
+      setPuzzleFrom(puzzle.shuffled_sentence.taken_from);
+      setSentenceToTranslate(puzzle.translated_sentence.sentence);
+      setCurrentSolution(puzzle.shuffled_sentence.sentence);
+      setCurrentHints(new Map());
+    };
+
+    const route = session
+      ? `${API_SERV}/get-new-puzzle-auth`
+      : `${API_SERV}/get-new-puzzle`;
+
+    const auth = session ? `Bearer ${await session!.getToken()}` : ``;
+
+    const puzzle = await fetch(route, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: auth,
+      },
+    }).then((response) => response.json());
+
+    setupPuzzle(puzzle);
   }
 
   function updateHints(hints: string) {
@@ -65,8 +97,14 @@ function App() {
     setCurrentHints(newHints);
   }
 
-  const submitOnClick = async () => {
-    const response = await fetch(`${API_SERV}/main`, {
+  const checkSolution = async () => {
+    const route = session
+      ? `${API_SERV}/check-puzzle-auth`
+      : `${API_SERV}/check-puzzle`;
+
+    const auth = session ? `Bearer ${await session!.getToken()}` : ``;
+
+    return fetch(route, {
       method: "POST",
       body: JSON.stringify({
         sentence_index: puzzleID,
@@ -75,18 +113,28 @@ function App() {
       }),
       headers: {
         "Content-Type": "application/json",
+        Authorization: auth,
       },
     }).then((response) => response.json());
+  };
+
+  const submitOnClick = async () => {
+    const check = await checkSolution();
 
     // Update hints regardless of the result to make the words green
-    updateHints(response.hints);
+    updateHints(check.hints);
 
-    if (response.isCorrect) {
+    if (check.isCorrect) {
       setPuzzleStatus(ProblemStatus.Correct);
     }
   };
 
-  const giveUpOnClick = () => {
+  const giveUpOnClick = async () => {
+    const check = await checkSolution();
+
+    // Update hints regardless of the result to make the words red/green
+    updateHints(check.hints);
+
     setPuzzleStatus(ProblemStatus.Incorrect);
   };
 

@@ -73,24 +73,11 @@ app.get("/add-dummy-users", async (req: Request, res: Response) => {
   res.json("done");
 });
 
-app.get(
-  "/protected-endpoint",
-  ClerkExpressWithAuth({}),
-  (req: WithAuthProp<Request>, res) => {
-    console.log("/GET @ protected-endpoint");
-    res.json(req.auth);
-  }
-);
-
 app.get("/", async (req: Request, res: Response) => {
   res.json({
     version: "0.0.7",
   });
 });
-
-async function getPuzzleById(objectId: string) {
-  return await Puzzle.findById(objectId);
-}
 
 async function getPuzzleIdsWithElo(min: number, max: number) {
   return await Puzzle.find(
@@ -104,7 +91,7 @@ async function getPuzzleIdsWithElo(min: number, max: number) {
 async function getRandomPuzzleWithElo(min: number, max: number) {
   const puzzleIDs = await getPuzzleIdsWithElo(min, max);
   const randomID = Math.floor(Math.random() * puzzleIDs.length);
-  const randomPuzzle = await getPuzzleById(puzzleIDs[randomID].id);
+  const randomPuzzle = await Puzzle.findById(puzzleIDs[randomID].id);
   const puzzle = {
     id: randomPuzzle.id,
     translated_sentence: randomPuzzle.translated_sentence,
@@ -122,8 +109,23 @@ app.get("/get-new-puzzle", async (req: Request, res: Response) => {
   res.json(await getRandomPuzzleWithElo(1400, 1600));
 });
 
-app.post("/main", async (req: Request, res: Response) => {
-  const puzzle = await getPuzzleById(req.body.sentence_index);
+app.get(
+  "/get-new-puzzle-auth",
+  ClerkExpressWithAuth({}),
+  async (req: WithAuthProp<Request>, res) => {
+    const user = await User.findById(req.auth.userId);
+    if (!user) {
+      res.status(404).send({ error: "User is not found" });
+      throw Error("User is not found");
+    }
+    res.json(
+      await getRandomPuzzleWithElo(user.rating - 300, user.rating + 300)
+    );
+  }
+);
+
+const checkPuzzle = async (req: Request) => {
+  const puzzle = await Puzzle.findById(req.body.sentence_index);
   const correctWordOrder: string[] =
     puzzle.original_sentence.sentence.split(" ");
   const currentSolution: string[] = req.body.solution;
@@ -150,9 +152,72 @@ app.post("/main", async (req: Request, res: Response) => {
       }
     }
   );
-
-  res.json({
+  return {
     isCorrect: isCorrect,
     hints: JSON.stringify(Object.fromEntries(newHints)),
-  });
+  };
+};
+
+app.post("/check-puzzle", async (req: Request, res: Response) => {
+  const result = await checkPuzzle(req);
+  res.json(result);
 });
+
+app.post(
+  "/check-puzzle-auth",
+  ClerkExpressWithAuth({}),
+  async (req: WithAuthProp<Request>, res) => {
+    const result = await checkPuzzle(req);
+
+    const user = await User.findById(req.auth.userId);
+    if (!user) {
+      res.status(404).send({ error: "User is not found" });
+      throw Error("User is not found");
+    }
+
+    const puzzle = await Puzzle.findById(req.body.sentence_index);
+    if (!puzzle) {
+      res.status(404).send({ error: "Puzzle is not found" });
+      throw Error("Puzzle is not found");
+    }
+
+    if (result.isCorrect) {
+      user.rating += 10;
+      puzzle.elo -= 10;
+    } else {
+      user.rating -= 10;
+      puzzle.elo += 10;
+    }
+    user.save();
+    puzzle.save();
+
+    res.json(result);
+  }
+);
+
+// Just to make sure that all users are in [User] collection
+app.post(
+  "/say-hi",
+  ClerkExpressWithAuth({}),
+  async (req: WithAuthProp<Request>, res) => {
+    const user = await User.exists({ _id: req.auth.userId });
+    if (user == null) {
+      const newUser = new User({
+        _id: req.auth.userId,
+        rating: 1500,
+      });
+      await newUser.save();
+    }
+    res.json("hi");
+  }
+);
+
+app.get(
+  "/user-elo",
+  ClerkExpressWithAuth({}),
+  async (req: WithAuthProp<Request>, res) => {
+    const user = await User.findById(req.auth.userId);
+    if (!user) res.status(404).send({ error: "User is not found" });
+    res.json(user.rating);
+  }
+);

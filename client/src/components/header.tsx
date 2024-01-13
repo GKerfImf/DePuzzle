@@ -1,4 +1,5 @@
 import React from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -18,8 +19,28 @@ import {
   useSession,
 } from "@clerk/clerk-react";
 
+const API_SERV = "https://de-puzzle-api.vercel.app";
+// const API_SERV = "http://localhost:5174";
+
 export default function Header() {
-  const { session } = useSession();
+  const { session, isSignedIn, isLoaded } = useSession();
+  const [userElo, setUserElo] = useState("");
+
+  useEffect(() => {
+    const setElo = async () => {
+      const response = await fetch(`${API_SERV}/user-elo`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await session!.getToken()}`,
+        },
+      }).then((response) => response.json());
+      setUserElo(response);
+    };
+    if (isLoaded && isSignedIn) {
+      setElo();
+    }
+  }, [isLoaded, isSignedIn]);
 
   return (
     <header className=" mb-6 flex w-screen items-center justify-between border-b p-3 ">
@@ -40,7 +61,7 @@ export default function Header() {
         </SignedOut>
         <SignedIn>
           <div className="flex items-center rounded-full border border-gray-400">
-            <span className="mx-8 font-medium"> 1500 </span>
+            <span className="mx-8 font-medium"> {userElo} </span>
             <DropdownMenu>
               <DropdownMenuTrigger className="focus:outline-none">
                 <Avatar>
