@@ -18,6 +18,7 @@ import {
   SignedOut,
   useSession,
 } from "@clerk/clerk-react";
+import logo from "./../assets/germany3.png";
 
 const API_SERV = "https://de-puzzle-api.vercel.app";
 // const API_SERV = "http://localhost:5174";
@@ -46,7 +47,10 @@ export default function Header() {
 
   return (
     <header className=" mb-6 flex w-screen items-center justify-between border-b p-3 ">
-      <span className="text-2xl">DePuzzle</span>
+      <div className="flex items-center ">
+        <img src={logo} alt="Logo" className=" mr-4 w-10" />
+        <span className="text-2xl">DePuzzle</span>
+      </div>
 
       <div className="">
         <SignedOut>
