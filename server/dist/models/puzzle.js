@@ -39,7 +39,7 @@ const PuzzleSchema = new Schema({
     // Usually, it is just a DeepL-translation of the original sentence to EN
     translated_sentence: SentenceSchema,
     // The difficulty of solving the puzzle estimated via Glicko-2
-    elo: Number, // TODO: rename to "rating"
+    rating: rating_1.RatingSchema,
     games_history: [rating_1.GameSchema],
     // The set of polls for the puzzle
     polls: [PollSchema],

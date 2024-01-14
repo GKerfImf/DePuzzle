@@ -23,6 +23,8 @@ const shuffle_1 = __importDefault(require("./util/shuffle"));
 const zip_1 = __importDefault(require("./util/zip"));
 const hint_1 = __importDefault(require("./util/hint"));
 const clerk_sdk_node_1 = require("@clerk/clerk-sdk-node");
+const glicko2_1 = require("./util/glicko2");
+// ---- ---- ---- ----  ---- ---- ---- ----  ---- ---- ---- ----  ---- ---- ---- ----
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)({}));
 app.use((0, cors_1.default)({
@@ -56,7 +58,7 @@ app.get("/add-dummy-puzzles", (req, res) => __awaiter(void 0, void 0, void 0, fu
                 language: "en",
                 taken_from: "DeepL",
             },
-            elo: puzzle[2],
+            rating: (0, glicko2_1.getNewRating)(Number(puzzle[2])),
             games_history: [],
             polls: [],
         });
@@ -69,7 +71,7 @@ app.get("/add-dummy-users", (req, res) => __awaiter(void 0, void 0, void 0, func
     users.forEach((user, index) => __awaiter(void 0, void 0, void 0, function* () {
         const newPair = new user_1.default({
             _id: index,
-            rating: user,
+            rating: (0, glicko2_1.getNewRating)(user),
             games_history: [],
         });
         yield newPair.save();
@@ -84,7 +86,7 @@ app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 function getPuzzleIdsWithElo(min, max) {
     return __awaiter(this, void 0, void 0, function* () {
         return yield puzzle_1.default.find({
-            elo: { $gte: min, $lte: max },
+            "rating.rating": { $gte: min, $lte: max },
         }, "_id");
     });
 }
@@ -92,6 +94,7 @@ function getRandomPuzzleWithElo(min, max) {
     return __awaiter(this, void 0, void 0, function* () {
         const puzzleIDs = yield getPuzzleIdsWithElo(min, max);
         const randomID = Math.floor(Math.random() * puzzleIDs.length);
+        // TODO: handle puzzleIDs = []
         const randomPuzzle = yield puzzle_1.default.findById(puzzleIDs[randomID].id);
         const puzzle = {
             id: randomPuzzle.id,
@@ -101,7 +104,7 @@ function getRandomPuzzleWithElo(min, max) {
                 language: randomPuzzle.original_sentence.language,
                 taken_from: randomPuzzle.original_sentence.taken_from,
             },
-            elo: randomPuzzle.elo,
+            rating: randomPuzzle.rating,
         };
         return puzzle;
     });
@@ -115,7 +118,7 @@ app.get("/get-new-puzzle-auth", (0, clerk_sdk_node_1.ClerkExpressWithAuth)({}), 
         res.status(404).send({ error: "User is not found" });
         throw Error("User is not found");
     }
-    res.json(yield getRandomPuzzleWithElo(user.rating - 300, user.rating + 300));
+    res.json(yield getRandomPuzzleWithElo(user.rating.rating - user.rating.rd, user.rating.rating + user.rating.rd));
 }));
 const checkPuzzle = (req) => __awaiter(void 0, void 0, void 0, function* () {
     const puzzle = yield puzzle_1.default.findById(req.body.sentence_index);
@@ -154,15 +157,10 @@ app.post("/check-puzzle-auth", (0, clerk_sdk_node_1.ClerkExpressWithAuth)({}), (
         res.status(404).send({ error: "Puzzle is not found" });
         throw Error("Puzzle is not found");
     }
-    if (result.isCorrect) {
-        user.rating += 10;
-        puzzle.elo -= 10;
-    }
-    else {
-        user.rating -= 10;
-        puzzle.elo += 10;
-    }
+    const [newUserRating, newPuzzleRating] = (0, glicko2_1.updateRatings)(user.rating, puzzle.rating, result.isCorrect ? 1 : 0);
+    user.rating = newUserRating;
     user.save();
+    puzzle.rating = newPuzzleRating;
     puzzle.save();
     res.json(result);
 }));
@@ -172,16 +170,21 @@ app.post("/say-hi", (0, clerk_sdk_node_1.ClerkExpressWithAuth)({}), (req, res) =
     if (user == null) {
         const newUser = new user_1.default({
             _id: req.auth.userId,
-            rating: 1500,
+            rating: (0, glicko2_1.getNewRating)(),
         });
         yield newUser.save();
     }
     res.json("hi");
 }));
+// TODO: ensure that [/say-hi] always runs first, and then replace [1500] with
+// [user.rating.rating]
 app.get("/user-elo", (0, clerk_sdk_node_1.ClerkExpressWithAuth)({}), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield user_1.default.findById(req.auth.userId);
-    if (!user)
+    if (!user) {
         res.status(404).send({ error: "User is not found" });
-    res.json(user.rating);
+        res.json(1500);
+        return;
+    }
+    res.json(user.rating.rating);
 }));
 //# sourceMappingURL=index.js.map

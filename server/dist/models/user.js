@@ -8,7 +8,7 @@ const rating_1 = require("./schemas/rating");
 const Schema = mongoose_1.default.Schema;
 const UserSchema = new Schema({
     _id: String,
-    rating: Number,
+    rating: rating_1.RatingSchema,
     games_history: [rating_1.GameSchema],
 }, { timestamps: true });
 const UserModel = mongoose_1.default.model("User", UserSchema);
