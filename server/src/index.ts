@@ -10,6 +10,9 @@ import shuffle from "./util/shuffle";
 import zip from "./util/zip";
 import Hint from "./util/hint";
 import { WithAuthProp, ClerkExpressWithAuth } from "@clerk/clerk-sdk-node";
+import { getNewRating, updateRatings } from "./util/glicko2";
+
+// ---- ---- ---- ----  ---- ---- ---- ----  ---- ---- ---- ----  ---- ---- ---- ----
 
 const app = express();
 app.use(cors({}));
@@ -50,7 +53,7 @@ app.get("/add-dummy-puzzles", async (req: Request, res: Response) => {
         language: "en",
         taken_from: "DeepL",
       },
-      elo: puzzle[2],
+      rating: getNewRating(Number(puzzle[2])),
       games_history: [],
       polls: [],
     });
@@ -65,7 +68,7 @@ app.get("/add-dummy-users", async (req: Request, res: Response) => {
   users.forEach(async (user: number, index: number) => {
     const newPair = new User({
       _id: index,
-      rating: user,
+      rating: getNewRating(user),
       games_history: [],
     });
     await newPair.save();
@@ -82,7 +85,7 @@ app.get("/", async (req: Request, res: Response) => {
 async function getPuzzleIdsWithElo(min: number, max: number) {
   return await Puzzle.find(
     {
-      elo: { $gte: min, $lte: max },
+      "rating.rating": { $gte: min, $lte: max },
     },
     "_id"
   );
@@ -91,6 +94,9 @@ async function getPuzzleIdsWithElo(min: number, max: number) {
 async function getRandomPuzzleWithElo(min: number, max: number) {
   const puzzleIDs = await getPuzzleIdsWithElo(min, max);
   const randomID = Math.floor(Math.random() * puzzleIDs.length);
+
+  // TODO: handle puzzleIDs = []
+
   const randomPuzzle = await Puzzle.findById(puzzleIDs[randomID].id);
   const puzzle = {
     id: randomPuzzle.id,
@@ -100,7 +106,7 @@ async function getRandomPuzzleWithElo(min: number, max: number) {
       language: randomPuzzle.original_sentence.language,
       taken_from: randomPuzzle.original_sentence.taken_from,
     },
-    elo: randomPuzzle.elo,
+    rating: randomPuzzle.rating,
   };
   return puzzle;
 }
@@ -119,7 +125,10 @@ app.get(
       throw Error("User is not found");
     }
     res.json(
-      await getRandomPuzzleWithElo(user.rating - 300, user.rating + 300)
+      await getRandomPuzzleWithElo(
+        user.rating.rating - user.rating.rd,
+        user.rating.rating + user.rating.rd
+      )
     );
   }
 );
@@ -181,14 +190,16 @@ app.post(
       throw Error("Puzzle is not found");
     }
 
-    if (result.isCorrect) {
-      user.rating += 10;
-      puzzle.elo -= 10;
-    } else {
-      user.rating -= 10;
-      puzzle.elo += 10;
-    }
+    const [newUserRating, newPuzzleRating] = updateRatings(
+      user.rating,
+      puzzle.rating,
+      result.isCorrect ? 1 : 0
+    );
+
+    user.rating = newUserRating;
     user.save();
+
+    puzzle.rating = newPuzzleRating;
     puzzle.save();
 
     res.json(result);
@@ -204,7 +215,7 @@ app.post(
     if (user == null) {
       const newUser = new User({
         _id: req.auth.userId,
-        rating: 1500,
+        rating: getNewRating(),
       });
       await newUser.save();
     }
@@ -212,12 +223,18 @@ app.post(
   }
 );
 
+// TODO: ensure that [/say-hi] always runs first, and then replace [1500] with
+// [user.rating.rating]
 app.get(
   "/user-elo",
   ClerkExpressWithAuth({}),
   async (req: WithAuthProp<Request>, res) => {
     const user = await User.findById(req.auth.userId);
-    if (!user) res.status(404).send({ error: "User is not found" });
-    res.json(user.rating);
+    if (!user) {
+      res.status(404).send({ error: "User is not found" });
+      res.json(1500);
+      return;
+    }
+    res.json(user.rating.rating);
   }
 );

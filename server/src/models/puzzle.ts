@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { GameSchema } from "./schemas/rating";
+import { RatingSchema, GameSchema } from "./schemas/rating";
 
 const Schema = mongoose.Schema;
 
@@ -44,7 +44,7 @@ const PuzzleSchema = new Schema(
     translated_sentence: SentenceSchema,
 
     // The difficulty of solving the puzzle estimated via Glicko-2
-    elo: Number, // TODO: rename to "rating"
+    rating: RatingSchema,
     games_history: [GameSchema],
 
     // The set of polls for the puzzle

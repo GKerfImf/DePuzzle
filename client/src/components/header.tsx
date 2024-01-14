@@ -26,6 +26,8 @@ export default function Header() {
   const { session, isSignedIn, isLoaded } = useSession();
   const [userElo, setUserElo] = useState("");
 
+  // TODO: there is a problem with the case when the user does not exist, but
+  // this effect runs before [/say-hi]
   useEffect(() => {
     const setElo = async () => {
       const response = await fetch(`${API_SERV}/user-elo`, {
@@ -61,7 +63,10 @@ export default function Header() {
         </SignedOut>
         <SignedIn>
           <div className="flex items-center rounded-full border border-gray-400">
-            <span className="mx-8 font-medium"> {userElo} </span>
+            <span className="mx-8 font-medium">
+              {" "}
+              {Math.floor(Number(userElo))}{" "}
+            </span>
             <DropdownMenu>
               <DropdownMenuTrigger className="focus:outline-none">
                 <Avatar>

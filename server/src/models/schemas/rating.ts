@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { InferSchemaType } from "mongoose";
 
 const Schema = mongoose.Schema;
 
@@ -10,6 +10,8 @@ const RatingSchema = new Schema({
   rd: Number,
   vol: Number,
 });
+
+type Rating = InferSchemaType<typeof RatingSchema>;
 
 // TODO: maybe it should include IDs of opponents
 // To challenge users with questions appropriate to their language level, we
@@ -29,4 +31,4 @@ const GameSchema = new Schema(
   { timestamps: true }
 );
 
-export { RatingSchema, GameSchema };
+export { Rating, RatingSchema, GameSchema };

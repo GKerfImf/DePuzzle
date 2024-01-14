@@ -66,7 +66,7 @@ function App() {
   async function fetchNewProblem() {
     const setupPuzzle = (puzzle: any) => {
       setPuzzleID(puzzle.id);
-      setPuzzleElo(puzzle.elo);
+      setPuzzleElo(puzzle.rating.rating);
       setPuzzleFrom(puzzle.shuffled_sentence.taken_from);
       setSentenceToTranslate(puzzle.translated_sentence.sentence);
       setCurrentSolution(puzzle.shuffled_sentence.sentence);
@@ -167,7 +167,7 @@ function App() {
             {sentenceToTranslate}
           </p>
           <div className="flex w-full justify-between px-4 pb-2 font-mono text-xs text-gray-400">
-            <p className="">Elo: {puzzleElo}</p>
+            <p className="">Elo: {Math.floor(Number(puzzleElo))}</p>
             <p className="">From: {puzzleFrom}</p>
           </div>
         </div>
