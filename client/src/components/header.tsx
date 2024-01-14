@@ -42,7 +42,7 @@ export default function Header() {
     if (isLoaded && isSignedIn) {
       setElo();
     }
-  }, [isLoaded, isSignedIn]);
+  });
 
   return (
     <header className=" mb-6 flex w-screen items-center justify-between border-b p-3 ">
