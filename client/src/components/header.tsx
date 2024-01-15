@@ -20,7 +20,7 @@ import {
 } from "@clerk/clerk-react";
 import logo from "./../assets/germany3.png";
 
-const API_SERV = "https://de-puzzle-api.vercel.app";
+const API_SERV = "https://dolphin-app-9h28j.ondigitalocean.app";
 // const API_SERV = "http://localhost:5174";
 
 export default function Header() {

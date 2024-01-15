@@ -11,7 +11,7 @@ enum ProblemStatus {
   Incorrect,
 }
 
-const API_SERV = "https://de-puzzle-api.vercel.app";
+const API_SERV = "https://dolphin-app-9h28j.ondigitalocean.app";
 // const API_SERV = "http://localhost:5174";
 
 function App() {

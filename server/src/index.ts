@@ -18,7 +18,7 @@ const app = express();
 app.use(cors({}));
 app.use(
   cors({
-    origin: ["https://de-puzzle.vercel.app/", "http://localhost:5174/"],
+    origin: ["https://de-puzzle.vercel.app/", "http://localhost:8080/"],
     methods: ["POST", "GET"],
   })
 );
@@ -26,7 +26,7 @@ app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URL).then(() => {
   console.log("success!");
-  app.listen(5174);
+  app.listen(8080);
 });
 
 // ----------------------------------------------------------------
