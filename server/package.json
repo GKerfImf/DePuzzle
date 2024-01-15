@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --watch \"src/*\" --ext \"ts,json\" --exec \"ts-node src/index.ts\" ",
-    "start": "nodemon src/index.ts",
+    "start": "nodemon src/index.ts --exitcrash",
     "build.js": "rimraf dist && tsc",
     "build": "rimraf dist && tsc",
     "ts.check": "tsc --project tsconfig.json",
