@@ -1,6 +1,6 @@
 import React from "react";
 import { useState } from "react";
-import DraggableWord from "../DraggableWord";
+import DraggableWord from "./draggable_word";
 import arrayMove from "../util/array_move";
 import Coordinate from "../util/coordinate";
 import Hint from "../util/hint";

@@ -1,6 +1,6 @@
 import React from "react";
 import { useRef, useEffect } from "react";
-import Coordinate from "./util/coordinate";
+import Coordinate from "../util/coordinate";
 
 interface DraggableWordProps {
   word: string;
