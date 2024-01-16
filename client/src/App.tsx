@@ -151,10 +151,8 @@ function App() {
           puzzleFrom={puzzleFrom}
         />
         <DragNDropArea
+          currentSolution={currentSolution}
           wordHints={getHint}
-          getCurrentSolution={() => {
-            return currentSolution;
-          }}
           setCurrentSolution={setCurrentSolution}
           problemStatus={puzzleStatus}
         />

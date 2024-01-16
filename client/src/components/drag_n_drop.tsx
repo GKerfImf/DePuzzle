@@ -35,20 +35,20 @@ const getBorderColor = (puzzleStatus: ProblemStatus) => {
 };
 
 interface DragNDropAreaProps {
+  currentSolution: string[];
   setCurrentSolution: React.Dispatch<React.SetStateAction<string[]>>;
-  getCurrentSolution: () => string[];
   wordHints: (word: string, index: number) => Hint;
   problemStatus: ProblemStatus;
 }
 
 const DragNDropArea: React.FC<DragNDropAreaProps> = ({
+  currentSolution,
   setCurrentSolution,
-  getCurrentSolution,
   wordHints,
   problemStatus,
 }) => {
   const [coord, setCoord] = useState<Coordinate[]>(
-    Array.from({ length: getCurrentSolution().length }, (_) => {
+    Array.from({ length: currentSolution.length }, (_) => {
       return { x: 0, y: 0 };
     }),
   );
@@ -68,7 +68,7 @@ const DragNDropArea: React.FC<DragNDropAreaProps> = ({
 
   const onDragEndHandle = (_event: React.DragEvent) => {
     setDraggedElIndex(-1);
-    setCurrentSolution(getCurrentSolution());
+    setCurrentSolution(currentSolution);
   };
 
   const onDragOverHandle = (event: React.DragEvent) => {
@@ -82,7 +82,7 @@ const DragNDropArea: React.FC<DragNDropAreaProps> = ({
         (draggedElIndex == prevIndex && draggedElIndex == closestWordIndex)
       ) {
       } else {
-        const newWords = getCurrentSolution().slice();
+        const newWords = currentSolution.slice();
         arrayMove(newWords, draggedElIndex, closestWordIndex);
         setCurrentSolution(newWords);
         setDraggedElIndex(closestWordIndex);
@@ -109,9 +109,9 @@ const DragNDropArea: React.FC<DragNDropAreaProps> = ({
     } else {
       // TODO: move to a new function
       // Two different words
-      const newWords = getCurrentSolution().slice();
-      newWords[index] = getCurrentSolution()[clickedWordIndex];
-      newWords[clickedWordIndex] = getCurrentSolution()[index];
+      const newWords = currentSolution.slice();
+      newWords[index] = currentSolution[clickedWordIndex];
+      newWords[clickedWordIndex] = currentSolution[index];
 
       setCurrentSolution(newWords);
       setClickedWordIndex(null);
@@ -131,7 +131,7 @@ const DragNDropArea: React.FC<DragNDropAreaProps> = ({
         onDragOver={onDragOverHandle}
         onClick={onClickHandle}
       >
-        {getCurrentSolution().map((word, index) => {
+        {currentSolution.map((word, index) => {
           return (
             <DraggableWord
               key={index}
