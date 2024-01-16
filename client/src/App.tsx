@@ -1,18 +1,14 @@
 import React from "react";
 import { useState, useEffect } from "react";
-import Puzzle from "./Puzzle";
+import DragNDropArea from "./components/drag_n_drop";
 import Hint from "./util/hint";
 import Header from "./components/header";
 import { useSession } from "@clerk/clerk-react";
-
-enum ProblemStatus {
-  Solving,
-  Correct,
-  Incorrect,
-}
+import SentenceToTranslate from "./components/sentence_translate";
+import { ProblemStatus } from "./util/problem_status";
 
 const API_SERV = "https://dolphin-app-9h28j.ondigitalocean.app";
-// const API_SERV = "http://localhost:5174";
+// const API_SERV = "http://localhost:8080";
 
 function App() {
   const { session, isSignedIn, isLoaded } = useSession();
@@ -143,48 +139,25 @@ function App() {
     fetchNewProblem();
   };
 
-  // TODO: can this be done with useContext?
-  // Based on the problem status, Sets the color for component borders
-  const getBorderColor = () => {
-    switch (puzzleStatus) {
-      case ProblemStatus.Solving:
-        return "border";
-      case ProblemStatus.Correct:
-        return "border-2 border-green-500";
-      case ProblemStatus.Incorrect:
-        return "border-2 border-red-500";
-    }
-  };
-
   return (
     // <div className="flex h-full w-screen max-w-xl flex-col justify-center pt-10 font-mono">
     <div className="felx flex-col justify-center font-mono">
       <Header />
       <div className="mx-auto flex max-w-xl flex-col items-center">
         {/*  */}
-        <div className={`m-2 w-full rounded-2xl border bg-white shadow-xl`}>
-          <p className="px-10 pb-6 pt-8 text-xl font-medium text-blue-900">
-            {sentenceToTranslate}
-          </p>
-          <div className="flex w-full justify-between px-4 pb-2 font-mono text-xs text-gray-400">
-            <p className="">Elo: {Math.floor(Number(puzzleElo))}</p>
-            <p className="">From: {puzzleFrom}</p>
-          </div>
-        </div>
-
-        {/*  */}
-
-        <div
-          className={`${getBorderColor()} m-2 flex w-full justify-center rounded-2xl bg-white p-8 shadow-xl`}
-        >
-          <Puzzle
-            wordHints={getHint}
-            getCurrentSolution={() => {
-              return currentSolution;
-            }}
-            setCurrentSolution={setCurrentSolution}
-          />
-        </div>
+        <SentenceToTranslate
+          sentenceToTranslate={sentenceToTranslate}
+          puzzleElo={puzzleElo}
+          puzzleFrom={puzzleFrom}
+        />
+        <DragNDropArea
+          wordHints={getHint}
+          getCurrentSolution={() => {
+            return currentSolution;
+          }}
+          setCurrentSolution={setCurrentSolution}
+          problemStatus={puzzleStatus}
+        />
         <div className="flex w-full justify-end">
           {puzzleStatus == ProblemStatus.Solving
             ? [

@@ -1,10 +1,11 @@
 import React from "react";
 import { useState } from "react";
-import DraggableWord from "./DraggableWord";
-import arrayMove from "./util/array_move";
-import Coordinate from "./util/coordinate";
-import Hint from "./util/hint";
-import findClosestIndex from "./util/closest_index";
+import DraggableWord from "../DraggableWord";
+import arrayMove from "../util/array_move";
+import Coordinate from "../util/coordinate";
+import Hint from "../util/hint";
+import findClosestIndex from "../util/closest_index";
+import { ProblemStatus } from "@/util/problem_status";
 
 const hint2color = (hint: Hint) => {
   switch (hint) {
@@ -20,16 +21,31 @@ const hint2color = (hint: Hint) => {
   }
 };
 
-interface PuzzleProps {
+// TODO: can this be done with useContext?
+// Based on the problem status, Sets the color for component borders
+const getBorderColor = (puzzleStatus: ProblemStatus) => {
+  switch (puzzleStatus) {
+    case ProblemStatus.Solving:
+      return "border";
+    case ProblemStatus.Correct:
+      return "border-2 border-green-500";
+    case ProblemStatus.Incorrect:
+      return "border-2 border-red-500";
+  }
+};
+
+interface DragNDropAreaProps {
   setCurrentSolution: React.Dispatch<React.SetStateAction<string[]>>;
   getCurrentSolution: () => string[];
   wordHints: (word: string, index: number) => Hint;
+  problemStatus: ProblemStatus;
 }
 
-const Puzzle: React.FC<PuzzleProps> = ({
+const DragNDropArea: React.FC<DragNDropAreaProps> = ({
   setCurrentSolution,
   getCurrentSolution,
   wordHints,
+  problemStatus,
 }) => {
   const [coord, setCoord] = useState<Coordinate[]>(
     Array.from({ length: getCurrentSolution().length }, (_) => {
@@ -104,30 +120,36 @@ const Puzzle: React.FC<PuzzleProps> = ({
 
   return (
     <div
-      className="flex flex-wrap"
-      onDragStart={dragStartHandle}
-      onDragEnd={onDragEndHandle}
-      onDragOver={onDragOverHandle}
-      onClick={onClickHandle}
+      className={`${getBorderColor(
+        problemStatus,
+      )} m-2 flex w-full justify-center rounded-2xl bg-white p-8 shadow-xl`}
     >
-      {getCurrentSolution().map((word, index) => {
-        return (
-          <DraggableWord
-            key={index}
-            word={word}
-            color={hint2color(wordHints(word, index))}
-            isClicked={index == clickedWordIndex}
-            isDragged={index == draggedElIndex}
-            sendCoord={(p: Coordinate) => {
-              var newCoord = coord;
-              newCoord[index] = p;
-              setCoord(newCoord);
-            }}
-          />
-        );
-      })}
+      <div
+        className="flex flex-wrap"
+        onDragStart={dragStartHandle}
+        onDragEnd={onDragEndHandle}
+        onDragOver={onDragOverHandle}
+        onClick={onClickHandle}
+      >
+        {getCurrentSolution().map((word, index) => {
+          return (
+            <DraggableWord
+              key={index}
+              word={word}
+              color={hint2color(wordHints(word, index))}
+              isClicked={index == clickedWordIndex}
+              isDragged={index == draggedElIndex}
+              sendCoord={(p: Coordinate) => {
+                var newCoord = coord;
+                newCoord[index] = p;
+                setCoord(newCoord);
+              }}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 };
 
-export default Puzzle;
+export default DragNDropArea;
