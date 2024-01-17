@@ -1,5 +1,7 @@
-export enum ProblemStatus {
+enum ProblemStatus {
   Solving,
   Correct,
   Incorrect,
 }
+
+export default ProblemStatus;

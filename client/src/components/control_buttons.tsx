@@ -1,5 +1,5 @@
 import React from "react";
-import { ProblemStatus } from "../util/problem_status";
+import ProblemStatus from "../util/problem_status";
 
 interface ControlButtonsProps {
   puzzleStatus: ProblemStatus;

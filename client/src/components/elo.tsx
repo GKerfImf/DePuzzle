@@ -1,12 +1,11 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import { useSession } from "@clerk/clerk-react";
-
-const API_SERV = "https://dolphin-app-9h28j.ondigitalocean.app";
-// const API_SERV = "http://localhost:8080";
+import { useFetch } from "@/hooks/useFetch";
 
 export default function Elo() {
-  const { session, isSignedIn, isLoaded } = useSession();
+  const { getElo } = useFetch();
+  const { isSignedIn } = useSession();
 
   const [userElo, setUserElo] = useState(null);
 
@@ -14,20 +13,12 @@ export default function Elo() {
   // this effect runs before [/say-hi]
   // TODO: it queries /user-elo toooo often, fix
   useEffect(() => {
-    const setElo = async () => {
-      const response = await fetch(`${API_SERV}/user-elo`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${await session!.getToken()}`,
-        },
-      }).then((response) => response.json());
-      setUserElo(response);
-    };
-    if (isLoaded && isSignedIn) {
-      setElo();
+    if (isSignedIn) {
+      (async () => {
+        setUserElo(await getElo());
+      })();
     }
-  });
+  }, []);
 
   return (
     <span className="mx-8 font-medium"> {Math.floor(Number(userElo))} </span>

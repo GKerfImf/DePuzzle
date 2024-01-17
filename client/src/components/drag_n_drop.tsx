@@ -1,11 +1,11 @@
 import React from "react";
 import { useState } from "react";
-import DraggableWord from "./draggable_word";
+import Hint from "../util/hint";
 import arrayMove from "../util/array_move";
 import Coordinate from "../util/coordinate";
-import Hint from "../util/hint";
+import ProblemStatus from "../util/problem_status";
 import findClosestIndex from "../util/closest_index";
-import { ProblemStatus } from "@/util/problem_status";
+import DraggableWord from "./draggable_word";
 
 const hint2color = (hint: Hint) => {
   switch (hint) {

@@ -1,23 +1,22 @@
 import React from "react";
 import { useState, useEffect } from "react";
-import DragNDropArea from ".//drag_n_drop";
-import Hint from "../util/hint";
 import { useSession } from "@clerk/clerk-react";
-import SentenceToTranslate from ".//sentence_translate";
-import { ProblemStatus } from "../util/problem_status";
+import Hint from "../util/hint";
+import ProblemStatus from "../util/problem_status";
+import DragNDropArea from "./drag_n_drop";
 import ControlButtons from "./control_buttons";
-
-const API_SERV = "https://dolphin-app-9h28j.ondigitalocean.app";
-// const API_SERV = "http://localhost:8080";
+import SentenceToTranslate from "./sentence_translate";
+import { useFetch } from "@/hooks/useFetch";
 
 export default function Puzzle() {
-  const { session, isSignedIn, isLoaded } = useSession();
+  const { isSignedIn, isLoaded } = useSession();
+  const { sayHi, getNewPuzzle, checkSolution } = useFetch();
 
   // Tracks whether the current puzzle is being solved, solved correctly, or solved incorrectly
   const [puzzleStatus, setPuzzleStatus] = useState(ProblemStatus.Incorrect);
 
   // Remember puzzle's ID to check the solution later
-  const [puzzleID, setPuzzleID] = useState(-1);
+  const [puzzleID, setPuzzleID] = useState("");
 
   // Remeber puzzle's origin (e.g., GPT-4) and ELO rating
   const [puzzleFrom, setPuzzleFrom] = useState("");
@@ -43,47 +42,19 @@ export default function Puzzle() {
 
   // If user does not exist, add one to the database
   useEffect(() => {
-    const sayHi = async () => {
-      const response = await fetch(`${API_SERV}/say-hi`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${await session!.getToken()}`,
-        },
-      }).then((response) => response.json());
-
-      return response;
-    };
     if (isLoaded && isSignedIn) {
       sayHi();
     }
   }, [isLoaded, isSignedIn]);
 
   async function fetchNewProblem() {
-    const setupPuzzle = (puzzle: any) => {
-      setPuzzleID(puzzle.id);
-      setPuzzleElo(puzzle.rating.rating);
-      setPuzzleFrom(puzzle.shuffled_sentence.taken_from);
-      setSentenceToTranslate(puzzle.translated_sentence.sentence);
-      setCurrentSolution(puzzle.shuffled_sentence.sentence);
-      setCurrentHints(new Map());
-    };
-
-    const route = session
-      ? `${API_SERV}/get-new-puzzle-auth`
-      : `${API_SERV}/get-new-puzzle`;
-
-    const auth = session ? `Bearer ${await session!.getToken()}` : ``;
-
-    const puzzle = await fetch(route, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: auth,
-      },
-    }).then((response) => response.json());
-
-    setupPuzzle(puzzle);
+    const puzzle = await getNewPuzzle();
+    setPuzzleID(puzzle.id);
+    setPuzzleElo(puzzle.rating.rating);
+    setPuzzleFrom(puzzle.shuffled_sentence.taken_from);
+    setSentenceToTranslate(puzzle.translated_sentence.sentence);
+    setCurrentSolution(puzzle.shuffled_sentence.sentence);
+    setCurrentHints(new Map());
   }
 
   function updateHints(hints: string) {
@@ -93,44 +64,17 @@ export default function Puzzle() {
     setCurrentHints(newHints);
   }
 
-  const checkSolution = async () => {
-    const route = session
-      ? `${API_SERV}/check-puzzle-auth`
-      : `${API_SERV}/check-puzzle`;
-
-    const auth = session ? `Bearer ${await session!.getToken()}` : ``;
-
-    return fetch(route, {
-      method: "POST",
-      body: JSON.stringify({
-        sentence_index: puzzleID,
-        solution: currentSolution,
-        known_hints: JSON.stringify(Object.fromEntries(currentHints)),
-      }),
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: auth,
-      },
-    }).then((response) => response.json());
-  };
-
   const submitOnClick = async () => {
-    const check = await checkSolution();
-
-    // Update hints regardless of the result to make the words green
+    const check = await checkSolution(puzzleID, currentSolution, currentHints);
     updateHints(check.hints);
-
     if (check.isCorrect) {
       setPuzzleStatus(ProblemStatus.Correct);
     }
   };
 
   const giveUpOnClick = async () => {
-    const check = await checkSolution();
-
-    // Update hints regardless of the result to make the words red/green
+    const check = await checkSolution(puzzleID, currentSolution, currentHints);
     updateHints(check.hints);
-
     setPuzzleStatus(ProblemStatus.Incorrect);
   };
 
@@ -141,7 +85,6 @@ export default function Puzzle() {
 
   return (
     <div className="mx-auto flex max-w-xl flex-col items-center">
-      {/*  */}
       <SentenceToTranslate
         sentenceToTranslate={sentenceToTranslate}
         puzzleElo={puzzleElo}
