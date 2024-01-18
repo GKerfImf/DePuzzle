@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import { useState, useEffect } from "react";
 import { useSession } from "@clerk/clerk-react";
 import Hint from "../util/hint";
@@ -7,13 +7,16 @@ import DragNDropArea from "./drag_n_drop";
 import ControlButtons from "./control_buttons";
 import SentenceToTranslate from "./sentence_translate";
 import { useFetch } from "@/hooks/useFetch";
+import ProblemStatusContext from "@/contexts/problem_status";
 
 export default function Puzzle() {
   const { isSignedIn, isLoaded } = useSession();
   const { sayHi, getNewPuzzle, checkSolution } = useFetch();
 
-  // Tracks whether the current puzzle is being solved, solved correctly, or solved incorrectly
-  const [puzzleStatus, setPuzzleStatus] = useState(ProblemStatus.Solving);
+  // Tracks whether (1) the current puzzle is being solved, solved correctly, or
+  // solved incorrectly, and (2) the number of tries
+  const { problemStatus, updateProblemStatus } =
+    useContext(ProblemStatusContext)!;
 
   // Tracks the state of the puzzle
   const [puzzle, setPuzzle] = useState<TPuzzle | null>(null);
@@ -65,7 +68,10 @@ export default function Puzzle() {
     );
     updateHints(check.hints);
     if (check.isCorrect) {
-      setPuzzleStatus(ProblemStatus.Correct);
+      updateProblemStatus(ProblemStatus.Correct);
+    } else {
+      // call [updateProblemStatus] anyway to increase the number of tries
+      updateProblemStatus(ProblemStatus.Solving);
     }
   }
 
@@ -79,11 +85,11 @@ export default function Puzzle() {
       currentHints,
     );
     updateHints(check.hints);
-    setPuzzleStatus(ProblemStatus.Incorrect);
+    updateProblemStatus(ProblemStatus.Incorrect);
   }
 
   function nextProblemOnClick() {
-    setPuzzleStatus(ProblemStatus.Solving);
+    updateProblemStatus(ProblemStatus.Solving);
     fetchNewProblem();
   }
 
@@ -95,11 +101,11 @@ export default function Puzzle() {
           puzzle={puzzle}
           setPuzzle={setPuzzle}
           wordHints={getHint}
-          problemStatus={puzzleStatus}
+          problemStatus={problemStatus}
         />
       ) : null}
       <ControlButtons
-        puzzleStatus={puzzleStatus}
+        puzzleStatus={problemStatus}
         giveUpOnClick={giveUpOnClick}
         submitOnClick={submitOnClick}
         nextProblemOnClick={nextProblemOnClick}
