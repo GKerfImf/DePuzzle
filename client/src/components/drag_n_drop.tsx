@@ -6,33 +6,7 @@ import Coordinate from "../util/coordinate";
 import ProblemStatus from "../util/problem_status";
 import findClosestIndex from "../util/closest_index";
 import DraggableWord from "./draggable_word";
-
-const hint2color = (hint: Hint) => {
-  switch (hint) {
-    case Hint.Correct: {
-      return "border-2 bg-green-50 border-green-500";
-    }
-    case Hint.Unknown: {
-      return "border bg-white";
-    }
-    case Hint.Incorrect: {
-      return "border-2 bg-red-50 border-red-500";
-    }
-  }
-};
-
-// TODO: can this be done with useContext?
-// Based on the problem status, Sets the color for component borders
-const getBorderColor = (puzzleStatus: ProblemStatus) => {
-  switch (puzzleStatus) {
-    case ProblemStatus.Solving:
-      return "border";
-    case ProblemStatus.Correct:
-      return "border-2 border-green-500";
-    case ProblemStatus.Incorrect:
-      return "border-2 border-red-500";
-  }
-};
+import { cn } from "@/lib/utils";
 
 interface DragNDropAreaProps {
   puzzle: TPuzzle | null;
@@ -134,9 +108,13 @@ const DragNDropArea: React.FC<DragNDropAreaProps> = ({
 
   return (
     <div
-      className={`${getBorderColor(
-        problemStatus,
-      )} m-2 flex w-full justify-center rounded-2xl bg-white p-8 shadow-xl`}
+      className={cn(
+        "m-2 flex w-full justify-center rounded-2xl border bg-white p-8 shadow-xl",
+        {
+          "border-2 border-green-500": problemStatus == ProblemStatus.Correct,
+          "border-2 border-red-500": problemStatus == ProblemStatus.Incorrect,
+        },
+      )}
     >
       <div
         className="flex flex-wrap"
@@ -150,7 +128,7 @@ const DragNDropArea: React.FC<DragNDropAreaProps> = ({
             <DraggableWord
               key={index}
               word={word}
-              color={hint2color(wordHints(word, index))}
+              hint={wordHints(word, index)}
               isClicked={index == clickedWordIndex}
               isDragged={index == draggedElIndex}
               sendCoord={(p: Coordinate) => {

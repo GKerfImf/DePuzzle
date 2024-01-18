@@ -1,10 +1,12 @@
 import React from "react";
 import { useRef, useEffect } from "react";
-import Coordinate from "../util/coordinate";
+import Coordinate from "@/util/coordinate";
+import { cn } from "@/lib/utils";
+import Hint from "@/util/hint";
 
 interface DraggableWordProps {
   word: string;
-  color: string;
+  hint: Hint;
   isDragged: boolean;
   isClicked: boolean;
   sendCoord: (_: Coordinate) => void;
@@ -12,7 +14,7 @@ interface DraggableWordProps {
 
 const DraggableWord: React.FC<DraggableWordProps> = ({
   word,
-  color,
+  hint,
   isDragged,
   isClicked,
   sendCoord,
@@ -30,10 +32,18 @@ const DraggableWord: React.FC<DraggableWordProps> = ({
   return (
     <div
       draggable
-      className={`draggable mx-2 my-1 cursor-grab rounded-lg px-2 py-1 shadow-lg
-                    ${color}
-                    ${isClicked ? "shadow-lg shadow-cyan-500/50" : ""}
-                    ${isDragged ? "bg-gray-300 opacity-50" : ""} `}
+      className={cn(
+        `draggable mx-2 my-1 cursor-grab rounded-lg px-2 py-1 shadow-lg`,
+        {
+          "shadow-cyan-500/50": isClicked,
+          "opacity-50": isDragged,
+        },
+        {
+          "border-2 border-green-500 bg-green-50": hint == Hint.Correct,
+          "border bg-white": hint == Hint.Unknown,
+          "border-2 border-red-500 bg-red-50": hint == Hint.Incorrect,
+        },
+      )}
       ref={componentRef}
     >
       {word}
