@@ -13,20 +13,10 @@ export default function Puzzle() {
   const { sayHi, getNewPuzzle, checkSolution } = useFetch();
 
   // Tracks whether the current puzzle is being solved, solved correctly, or solved incorrectly
-  const [puzzleStatus, setPuzzleStatus] = useState(ProblemStatus.Incorrect);
+  const [puzzleStatus, setPuzzleStatus] = useState(ProblemStatus.Solving);
 
-  // Remember puzzle's ID to check the solution later
-  const [puzzleID, setPuzzleID] = useState("");
-
-  // Remeber puzzle's origin (e.g., GPT-4) and ELO rating
-  const [puzzleFrom, setPuzzleFrom] = useState("");
-  const [puzzleElo, setPuzzleElo] = useState("");
-
-  // English sentence that the user has to translate to German
-  const [sentenceToTranslate, setSentenceToTranslate] = useState("");
-
-  // The current solution
-  const [currentSolution, setCurrentSolution] = useState<string[]>([]);
+  // Tracks the state of the puzzle
+  const [puzzle, setPuzzle] = useState<TPuzzle | null>(null);
 
   // Currently known set of hints
   const [currentHints, setCurrentHints] = useState<Map<string, number>>(
@@ -47,15 +37,9 @@ export default function Puzzle() {
     }
   }, [isLoaded, isSignedIn]);
 
-  async function fetchNewProblem() {
-    const puzzle = await getNewPuzzle();
-    setPuzzleID(puzzle.id);
-    setPuzzleElo(puzzle.rating.rating);
-    setPuzzleFrom(puzzle.shuffled_sentence.taken_from);
-    setSentenceToTranslate(puzzle.translated_sentence.sentence);
-    setCurrentSolution(puzzle.shuffled_sentence.sentence);
-    setCurrentHints(new Map());
-  }
+  useEffect(() => {
+    fetchNewProblem();
+  }, []);
 
   function updateHints(hints: string) {
     const newHints: Map<string, number> = new Map(
@@ -64,38 +48,56 @@ export default function Puzzle() {
     setCurrentHints(newHints);
   }
 
-  const submitOnClick = async () => {
-    const check = await checkSolution(puzzleID, currentSolution, currentHints);
+  async function fetchNewProblem() {
+    const puzzle: TPuzzle = await getNewPuzzle();
+    setPuzzle(puzzle);
+    setCurrentHints(new Map());
+  }
+
+  async function submitOnClick() {
+    if (!puzzle) {
+      return;
+    }
+    const check = await checkSolution(
+      puzzle.id,
+      puzzle.shuffled_sentence.sentence,
+      currentHints,
+    );
     updateHints(check.hints);
     if (check.isCorrect) {
       setPuzzleStatus(ProblemStatus.Correct);
     }
-  };
+  }
 
-  const giveUpOnClick = async () => {
-    const check = await checkSolution(puzzleID, currentSolution, currentHints);
+  async function giveUpOnClick() {
+    if (!puzzle) {
+      return;
+    }
+    const check = await checkSolution(
+      puzzle.id,
+      puzzle.shuffled_sentence.sentence,
+      currentHints,
+    );
     updateHints(check.hints);
     setPuzzleStatus(ProblemStatus.Incorrect);
-  };
+  }
 
-  const nextProblemOnClick = () => {
+  function nextProblemOnClick() {
     setPuzzleStatus(ProblemStatus.Solving);
     fetchNewProblem();
-  };
+  }
 
   return (
     <div className="mx-auto flex max-w-xl flex-col items-center">
-      <SentenceToTranslate
-        sentenceToTranslate={sentenceToTranslate}
-        puzzleElo={puzzleElo}
-        puzzleFrom={puzzleFrom}
-      />
-      <DragNDropArea
-        currentSolution={currentSolution}
-        wordHints={getHint}
-        setCurrentSolution={setCurrentSolution}
-        problemStatus={puzzleStatus}
-      />
+      <SentenceToTranslate puzzle={puzzle} />
+      {puzzle ? (
+        <DragNDropArea
+          puzzle={puzzle}
+          setPuzzle={setPuzzle}
+          wordHints={getHint}
+          problemStatus={puzzleStatus}
+        />
+      ) : null}
       <ControlButtons
         puzzleStatus={puzzleStatus}
         giveUpOnClick={giveUpOnClick}

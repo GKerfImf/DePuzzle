@@ -35,18 +35,32 @@ const getBorderColor = (puzzleStatus: ProblemStatus) => {
 };
 
 interface DragNDropAreaProps {
-  currentSolution: string[];
-  setCurrentSolution: React.Dispatch<React.SetStateAction<string[]>>;
+  puzzle: TPuzzle | null;
+  setPuzzle: React.Dispatch<React.SetStateAction<TPuzzle | null>>;
   wordHints: (word: string, index: number) => Hint;
   problemStatus: ProblemStatus;
 }
 
 const DragNDropArea: React.FC<DragNDropAreaProps> = ({
-  currentSolution,
-  setCurrentSolution,
+  puzzle,
+  setPuzzle,
   wordHints,
   problemStatus,
 }) => {
+  const currentSolution = puzzle ? puzzle!.shuffled_sentence.sentence : [];
+  const setCurrentSolution = (newSolution: string[]) => {
+    const newPuzzle: TPuzzle | null = puzzle
+      ? {
+          ...puzzle,
+          shuffled_sentence: {
+            ...puzzle?.shuffled_sentence,
+            sentence: newSolution,
+          },
+        }
+      : null;
+
+    setPuzzle(newPuzzle);
+  };
   const [coord, setCoord] = useState<Coordinate[]>(
     Array.from({ length: currentSolution.length }, (_) => {
       return { x: 0, y: 0 };
