@@ -1,5 +1,4 @@
 import React from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,15 +7,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import Avatar, { genConfig } from "react-nice-avatar";
+import { generateCookie } from "@/util/cookie";
 
 export default function Profile() {
+  const config = genConfig(generateCookie("visitor_id"));
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="focus:outline-none">
-        <Avatar>
-          {/* <AvatarImage src={`${isSignedIn ? session.user.imageUrl : ""}`} /> */}
-          <AvatarFallback>CN</AvatarFallback>
-        </Avatar>
+        <Avatar className="h-10 w-10" {...config} />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
@@ -24,7 +24,9 @@ export default function Profile() {
         <DropdownMenuItem disabled className="text-gray-300">
           Profile
         </DropdownMenuItem>
-        <DropdownMenuItem disabled>Delete </DropdownMenuItem>
+        <DropdownMenuItem disabled className="text-gray-300">
+          Delete
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -1,5 +1,7 @@
+import Cookies from "js-cookie";
+
 // https://hitchhikers.yext.com/guides/analyze-trends-with-visitor-analytics/07-cookies-visitors/
-export function create_UUID() {
+function create_UUID() {
   var dt = new Date().getTime();
   var uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
     /[xy]/g,
@@ -10,4 +12,11 @@ export function create_UUID() {
     },
   );
   return uuid;
+}
+
+export function generateCookie(name: string) {
+  if (!Cookies.get(name)) {
+    Cookies.set(name, create_UUID());
+  }
+  return Cookies.get(name);
 }

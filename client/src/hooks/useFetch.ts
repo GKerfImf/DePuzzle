@@ -1,5 +1,4 @@
-import { create_UUID } from "@/util/cookie";
-import Cookies from "js-cookie";
+import { generateCookie } from "@/util/cookie";
 import { useEffect } from "react";
 
 const API_SERV = "https://dolphin-app-9h28j.ondigitalocean.app";
@@ -7,10 +6,7 @@ const API_SERV = "https://dolphin-app-9h28j.ondigitalocean.app";
 
 export const useFetch = () => {
   useEffect(() => {
-    if (!Cookies.get("visitor_id")) {
-      Cookies.set("visitor_id", create_UUID());
-    }
-    console.log(Cookies.get("visitor_id"));
+    generateCookie("visitor_id");
   }, []);
 
   const getNewPuzzle = async () => {
