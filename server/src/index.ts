@@ -3,31 +3,61 @@ config();
 
 import mongoose from "mongoose";
 import express, { Request, Response } from "express";
-import cors from "cors";
 import Puzzle from "./models/puzzle";
 import User from "./models/user";
 import shuffle from "./util/shuffle";
 import zip from "./util/zip";
 import Hint from "./util/hint";
-import { WithAuthProp, ClerkExpressWithAuth } from "@clerk/clerk-sdk-node";
 import { getNewRating, updateRatings } from "./util/glicko2";
 
 // ---- ---- ---- ----  ---- ---- ---- ----  ---- ---- ---- ----  ---- ---- ---- ----
 
 const app = express();
-app.use(cors({}));
-app.use(
-  cors({
-    origin: ["https://de-puzzle.vercel.app/", "http://localhost:8080/"],
-    methods: ["POST", "GET"],
-  })
-);
+
+// https://stackoverflow.com/a/18311469/8125485
+// Add headers before the routes are defined
+app.use((req, res, next) => {
+  // Website you wish to allow to connect
+  // res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+  res.setHeader("Access-Control-Allow-Origin", "https://de-puzzle.vercel.app");
+
+  // Request methods you wish to allow
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS, PUT, PATCH, DELETE"
+  );
+
+  // Request headers you wish to allow
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "X-Requested-With,content-type"
+  );
+
+  // Set to true if you need the website to include cookies in the requests sent
+  // to the API (e.g. in case you use sessions)
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  // Pass to next layer of middleware
+  next();
+});
+
 app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URL).then(() => {
   console.log("success!");
   app.listen(8080);
 });
+
+// ----------------------------------------------------------------
+
+// https://firstdoit.com/quick-tip-one-liner-cookie-read-c695ecb4fe59
+function getCookie(req: Request, key: string) {
+  return ("; " + req.get("cookie"))
+    .split("; " + key + "=")
+    .pop()
+    .split(";")
+    .shift();
+}
 
 // ----------------------------------------------------------------
 
@@ -78,7 +108,7 @@ app.get("/add-dummy-users", async (req: Request, res: Response) => {
 
 app.get("/", async (req: Request, res: Response) => {
   res.json({
-    version: "0.0.7",
+    version: "0.0.8",
   });
 });
 
@@ -111,27 +141,29 @@ async function getRandomPuzzleWithElo(min: number, max: number) {
   return puzzle;
 }
 
-app.get("/get-new-puzzle", async (req: Request, res: Response) => {
-  res.json(await getRandomPuzzleWithElo(1400, 1600));
-});
-
-app.get(
-  "/get-new-puzzle-auth",
-  ClerkExpressWithAuth({}),
-  async (req: WithAuthProp<Request>, res) => {
-    const user = await User.findById(req.auth.userId);
-    if (!user) {
-      res.status(404).send({ error: "User is not found" });
-      throw Error("User is not found");
-    }
-    res.json(
-      await getRandomPuzzleWithElo(
-        user.rating.rating - user.rating.rd,
-        user.rating.rating + user.rating.rd
-      )
-    );
+async function findUser(req: Request) {
+  const visitor_id = getCookie(req, "visitor_id");
+  const user = await User.findById(visitor_id);
+  if (user) {
+    return user;
   }
-);
+  const newUser = new User({
+    _id: visitor_id,
+    rating: getNewRating(),
+  });
+  await newUser.save();
+  return newUser;
+}
+
+app.get("/get-new-puzzle", async (req: Request, res: Response) => {
+  const user = await findUser(req);
+  res.json(
+    await getRandomPuzzleWithElo(
+      user.rating.rating - user.rating.rd,
+      user.rating.rating + user.rating.rd
+    )
+  );
+});
 
 const checkPuzzle = async (req: Request) => {
   const puzzle = await Puzzle.findById(req.body.sentence_index);
@@ -169,72 +201,30 @@ const checkPuzzle = async (req: Request) => {
 
 app.post("/check-puzzle", async (req: Request, res: Response) => {
   const result = await checkPuzzle(req);
+  const user = await findUser(req);
+
+  const puzzle = await Puzzle.findById(req.body.sentence_index);
+  if (!puzzle) {
+    res.status(404).send({ error: "Puzzle is not found" });
+    throw Error("Puzzle is not found");
+  }
+
+  const [newUserRating, newPuzzleRating] = updateRatings(
+    user.rating,
+    puzzle.rating,
+    result.isCorrect ? 1 : 0
+  );
+
+  user.rating = newUserRating;
+  user.save();
+
+  puzzle.rating = newPuzzleRating;
+  puzzle.save();
+
   res.json(result);
 });
 
-app.post(
-  "/check-puzzle-auth",
-  ClerkExpressWithAuth({}),
-  async (req: WithAuthProp<Request>, res) => {
-    const result = await checkPuzzle(req);
-
-    const user = await User.findById(req.auth.userId);
-    if (!user) {
-      res.status(404).send({ error: "User is not found" });
-      throw Error("User is not found");
-    }
-
-    const puzzle = await Puzzle.findById(req.body.sentence_index);
-    if (!puzzle) {
-      res.status(404).send({ error: "Puzzle is not found" });
-      throw Error("Puzzle is not found");
-    }
-
-    const [newUserRating, newPuzzleRating] = updateRatings(
-      user.rating,
-      puzzle.rating,
-      result.isCorrect ? 1 : 0
-    );
-
-    user.rating = newUserRating;
-    user.save();
-
-    puzzle.rating = newPuzzleRating;
-    puzzle.save();
-
-    res.json(result);
-  }
-);
-
-// Just to make sure that all users are in [User] collection
-app.post(
-  "/say-hi",
-  ClerkExpressWithAuth({}),
-  async (req: WithAuthProp<Request>, res) => {
-    const user = await User.exists({ _id: req.auth.userId });
-    if (user == null) {
-      const newUser = new User({
-        _id: req.auth.userId,
-        rating: getNewRating(),
-      });
-      await newUser.save();
-    }
-    res.json("hi");
-  }
-);
-
-// TODO: ensure that [/say-hi] always runs first, and then replace [1500] with
-// [user.rating.rating]
-app.get(
-  "/user-elo",
-  ClerkExpressWithAuth({}),
-  async (req: WithAuthProp<Request>, res) => {
-    const user = await User.findById(req.auth.userId);
-    if (!user) {
-      res.status(404).send({ error: "User is not found" });
-      res.json(1500);
-      return;
-    }
-    res.json(user.rating.rating);
-  }
-);
+app.get("/user-elo", async (req: Request, res: Response) => {
+  const user = await findUser(req);
+  res.json(user.rating.rating);
+});

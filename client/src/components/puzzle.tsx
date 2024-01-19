@@ -1,6 +1,5 @@
 import React, { useContext } from "react";
 import { useState, useEffect } from "react";
-import { useSession } from "@clerk/clerk-react";
 import Hint from "../util/hint";
 import ProblemStatus from "../util/problem_status";
 import DragNDropArea from "./drag_n_drop";
@@ -10,8 +9,7 @@ import { useFetch } from "@/hooks/useFetch";
 import ProblemStatusContext from "@/contexts/problem_status";
 
 export default function Puzzle() {
-  const { isSignedIn, isLoaded } = useSession();
-  const { sayHi, getNewPuzzle, checkSolution } = useFetch();
+  const { getNewPuzzle, checkSolution } = useFetch();
 
   // Tracks whether (1) the current puzzle is being solved, solved correctly, or
   // solved incorrectly, and (2) the number of tries
@@ -32,13 +30,6 @@ export default function Puzzle() {
     }
     return Hint.Unknown;
   };
-
-  // If user does not exist, add one to the database
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      sayHi();
-    }
-  }, [isLoaded, isSignedIn]);
 
   useEffect(() => {
     fetchNewProblem();
