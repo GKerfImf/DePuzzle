@@ -130,9 +130,15 @@ async function getPuzzleIdsWithElo(
   max: number,
   ignoreList: string[]
 ) {
+  const tutorials = [
+    "000000000000000000000001",
+    "000000000000000000000002",
+    "000000000000000000000003",
+  ];
+
   return await Puzzle.find({
     $and: [
-      { _id: { $nin: ignoreList } },
+      { _id: { $nin: [...ignoreList, ...tutorials] } },
       {
         "rating.rating": { $gte: min, $lte: max },
       },
