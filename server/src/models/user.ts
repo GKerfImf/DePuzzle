@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { InferSchemaType } from "mongoose";
 import { RatingSchema, GameSchema } from "./schemas/rating";
 
 const Schema = mongoose.Schema;
@@ -12,5 +12,7 @@ const UserSchema = new Schema(
   { timestamps: true }
 );
 
+type TUser = InferSchemaType<typeof UserSchema>;
+
 const UserModel = mongoose.model("User", UserSchema);
-export default UserModel;
+export { TUser, UserModel };

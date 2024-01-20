@@ -16,7 +16,7 @@ function create_UUID() {
 
 export function generateCookie(name: string) {
   if (!Cookies.get(name)) {
-    Cookies.set(name, create_UUID());
+    Cookies.set(name, create_UUID(), { expires: 365 * 100 });
   }
   return Cookies.get(name);
 }

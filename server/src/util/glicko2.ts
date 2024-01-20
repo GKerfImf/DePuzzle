@@ -26,7 +26,7 @@ function getNewRating(elo?: number) {
   return rating;
 }
 
-function updateRatings(player1: Rating, player2: Rating, outcome: number) {
+function computeNewRatings(player1: Rating, player2: Rating, outcome: number) {
   const Alice = ranking.makePlayer(player1.rating, player1.rd, player1.vol);
   const Bob = ranking.makePlayer(player2.rating, player2.rd, player2.vol);
 
@@ -52,4 +52,4 @@ function updateRatings(player1: Rating, player2: Rating, outcome: number) {
   return [aliceNewRating, bobNewRating];
 }
 
-export { getNewRating, updateRatings };
+export { getNewRating, computeNewRatings };

@@ -10,6 +10,7 @@ export const useFetch = () => {
   }, []);
 
   const getNewPuzzle = async () => {
+    generateCookie("visitor_id");
     const route = `${API_SERV}/get-new-puzzle`;
 
     const puzzle = fetch(route, {

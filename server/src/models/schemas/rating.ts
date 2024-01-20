@@ -13,19 +13,19 @@ const RatingSchema = new Schema({
 
 type Rating = InferSchemaType<typeof RatingSchema>;
 
-// TODO: maybe it should include IDs of opponents
 // To challenge users with questions appropriate to their language level, we
 // use the Glicko-2 scale for both puzzles and users.
 const GameSchema = new Schema(
   {
-    rating: RatingSchema,
-    opponent_rating: RatingSchema,
-    // [win] -- user solved the puzzle with the first try (from user's PoV)
-    // [draw] -- user solved the puzzle with the second try (from user's PoV)
-    // [lose] -- otherwise
+    puzzle_id: String,
+    player_rating: RatingSchema,
+    puzzle_rating: RatingSchema,
+    // [win] -- user solved the puzzle
+    // [lose] -- user failed to solved the puzzle
+    // [pend] -- user has not yet tried to solve the puzzle
     outcome: {
       type: String,
-      enum: ["win", "draw", "lose"],
+      enum: ["win", "lose", "pend"],
     },
   },
   { timestamps: true }

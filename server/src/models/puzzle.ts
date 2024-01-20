@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { InferSchemaType } from "mongoose";
 import { RatingSchema, GameSchema } from "./schemas/rating";
 
 const Schema = mongoose.Schema;
@@ -53,5 +53,7 @@ const PuzzleSchema = new Schema(
   { timestamps: true }
 );
 
+type TPuzzle = InferSchemaType<typeof PuzzleSchema>;
+
 const PuzzleModel = mongoose.model("Puzzle", PuzzleSchema);
-export default PuzzleModel;
+export { TPuzzle, PuzzleModel };
