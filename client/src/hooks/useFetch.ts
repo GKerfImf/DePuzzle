@@ -10,16 +10,16 @@ export const useFetch = () => {
   }, []);
 
   const getNewPuzzle = async () => {
-    generateCookie("visitor_id");
-    const route = `${API_SERV}/get-new-puzzle`;
-
-    const puzzle = fetch(route, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
+    const puzzle = fetch(
+      `${API_SERV}/get-new-puzzle?visitor_id=${generateCookie("visitor_id")}`,
+      {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    }).then((response) => response.json());
+    ).then((response) => response.json());
 
     return puzzle;
   };
@@ -29,32 +29,37 @@ export const useFetch = () => {
     currentSolution: string[],
     currentHints: Map<string, number>,
   ) => {
-    const route = `${API_SERV}/check-puzzle`;
-
-    const response = fetch(route, {
-      method: "POST",
-      credentials: "include",
-      body: JSON.stringify({
-        sentence_index: puzzleID,
-        solution: currentSolution,
-        known_hints: JSON.stringify(Object.fromEntries(currentHints)),
-      }),
-      headers: {
-        "Content-Type": "application/json",
+    const response = fetch(
+      `${API_SERV}/check-puzzle?visitor_id=${generateCookie("visitor_id")}`,
+      {
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({
+          sentence_index: puzzleID,
+          solution: currentSolution,
+          known_hints: JSON.stringify(Object.fromEntries(currentHints)),
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    }).then((response) => response.json());
+    ).then((response) => response.json());
 
     return response;
   };
 
   const getElo = async () => {
-    const response = fetch(`${API_SERV}/user-elo`, {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
+    generateCookie("visitor_id");
+    const response = fetch(
+      `${API_SERV}/user-elo?visitor_id=${generateCookie("visitor_id")}`,
+      {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
-    }).then((response) => response.json());
+    ).then((response) => response.json());
 
     return response;
   };

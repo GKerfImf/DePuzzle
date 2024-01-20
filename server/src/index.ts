@@ -30,7 +30,7 @@ app.use((req, res, next) => {
   // Request headers you wish to allow
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "X-Requested-With,content-type"
+    "Origin,X-Requested-With,Content-Type,Set-Cookie"
   );
 
   // Set to true if you need the website to include cookies in the requests sent
@@ -52,11 +52,17 @@ mongoose.connect(process.env.MONGO_URL).then(() => {
 
 // https://firstdoit.com/quick-tip-one-liner-cookie-read-c695ecb4fe59
 function getCookie(req: Request, key: string) {
+  console.log("[getCookie] ");
   return ("; " + req.get("cookie"))
     .split("; " + key + "=")
     .pop()
     .split(";")
     .shift();
+}
+
+function getVisitorId(req: Request) {
+  console.log("[getVisitorId] ");
+  return req.query["visitor_id"];
 }
 
 // ----------------------------------------------------------------
@@ -161,7 +167,7 @@ async function findUser(req: Request) {
   console.log("[findUser]: call"); // TODO: logging
 
   try {
-    const visitor_id = getCookie(req, "visitor_id");
+    const visitor_id = getVisitorId(req);
     const user = await User.findById(visitor_id);
     if (user) {
       return user;
