@@ -3,6 +3,8 @@ config();
 
 import mongoose from "mongoose";
 import express, { Request, Response } from "express";
+import winston from "winston";
+
 import { PuzzleModel as Puzzle, TPuzzle } from "./models/puzzle";
 import { UserModel as User, TUser } from "./models/user";
 import shuffle from "./util/shuffle";
@@ -11,7 +13,22 @@ import Hint from "./util/hint";
 import { getNewRating, computeNewRatings } from "./util/glicko2";
 
 // ---- ---- ---- ----  ---- ---- ---- ----  ---- ---- ---- ----  ---- ---- ---- ----
-
+const colorizer = winston.format.colorize();
+const logger = winston.createLogger({
+  level: "debug",
+  format: winston.format.combine(
+    winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+    winston.format.simple(),
+    winston.format.align(),
+    winston.format.printf((msg) =>
+      colorizer.colorize(
+        msg.level,
+        `${msg.timestamp} - ${msg.level}: ${msg.message}`
+      )
+    )
+  ),
+  transports: [new winston.transports.Console()],
+});
 const app = express();
 
 // https://stackoverflow.com/a/18311469/8125485
@@ -44,15 +61,17 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URL).then(() => {
-  console.log("Successfully connected do MongoDB!");
-  app.listen(8080);
+  const PORT = 8080;
+  logger.info("Successfully connected do MongoDB!");
+  logger.info(`Listening on port ${PORT}`);
+  app.listen(PORT);
 });
 
 // ----------------------------------------------------------------
 
 // https://firstdoit.com/quick-tip-one-liner-cookie-read-c695ecb4fe59
 function getCookie(req: Request, key: string) {
-  console.log("[getCookie] ");
+  logger.debug("[getCookie]");
   return ("; " + req.get("cookie"))
     .split("; " + key + "=")
     .pop()
@@ -61,7 +80,7 @@ function getCookie(req: Request, key: string) {
 }
 
 function getVisitorId(req: Request) {
-  console.log("[getVisitorId] ");
+  logger.debug("[getVisitorId]");
   return req.query["visitor_id"];
 }
 
@@ -113,12 +132,16 @@ app.get("/add-dummy-users", async (req: Request, res: Response) => {
 });
 
 app.get("/", async (req: Request, res: Response) => {
+  logger.debug("/");
+
   res.json({
     version: "0.0.9",
   });
 });
 
 function shuffleOriginalSentence(puzzle: any) {
+  logger.debug("[shuffleOriginalSentence]");
+
   return {
     id: puzzle.id,
     translated_sentence: puzzle.translated_sentence,
@@ -136,6 +159,8 @@ async function getPuzzleIdsWithElo(
   max: number,
   ignoreList: string[]
 ) {
+  logger.debug("[getPuzzleIdsWithElo]");
+
   const tutorials = [
     "000000000000000000000001",
     "000000000000000000000002",
@@ -157,6 +182,8 @@ async function getRandomPuzzleWithElo(
   max: number,
   ignoreList: string[]
 ) {
+  logger.debug("[getRandomPuzzleWithElo]");
+
   const puzzleIDs = await getPuzzleIdsWithElo(min, max, ignoreList);
   // TODO: handle puzzleIDs = []
   const randomID = Math.floor(Math.random() * puzzleIDs.length);
@@ -164,7 +191,7 @@ async function getRandomPuzzleWithElo(
 }
 
 async function findUser(req: Request) {
-  console.log("[findUser]: call"); // TODO: logging
+  logger.debug("[findUser]");
 
   try {
     const visitor_id = getVisitorId(req);
@@ -180,13 +207,14 @@ async function findUser(req: Request) {
     return newUser;
   } catch (e: any) {
     // TODO: probably not the most elegant way to do retry, fix?
-    console.log("[findUser]: Failed to create a new user, retry"); // TODO: logging
+    logger.warn("[findUser]: Failed to create a new user, retry");
     await new Promise((f) => setTimeout(f, Math.floor(Math.random() * 250)));
     return findUser(req);
   }
 }
 
 function findLastGameOfUser(user: TUser): any | null {
+  logger.debug("[findLastGameOfUser]");
   if (!user.games_history.length) {
     return null;
   } else {
@@ -237,7 +265,7 @@ const isFinished = (game: any): boolean => {
 };
 
 app.get("/get-new-puzzle", async (req: Request, res: Response) => {
-  console.log("/get-new-puzzle"); // TODO: logging
+  logger.debug("/get-new-puzzle");
   const user: TUser = await findUser(req);
 
   var puzzle;
@@ -263,6 +291,8 @@ app.get("/get-new-puzzle", async (req: Request, res: Response) => {
 });
 
 const checkPuzzle = async (req: Request) => {
+  logger.debug("[checkPuzzle]");
+
   const puzzle = await Puzzle.findById(req.body.sentence_index);
   const correctWordOrder: string[] =
     puzzle.original_sentence.sentence.split(" ");
@@ -297,6 +327,8 @@ const checkPuzzle = async (req: Request) => {
 };
 
 const updateRatings = (user: any, puzzle: any, isCorrect: boolean) => {
+  logger.debug("[updateRatings]");
+
   const [newUserRating, newPuzzleRating] = computeNewRatings(
     user.rating,
     puzzle.rating,
@@ -311,11 +343,14 @@ const updateRatings = (user: any, puzzle: any, isCorrect: boolean) => {
 };
 
 app.post("/check-puzzle", async (req: Request, res: Response) => {
+  logger.debug("/check-puzzle");
+
   const result = await checkPuzzle(req);
   const user: TUser = await findUser(req);
 
   const puzzle: TPuzzle = await Puzzle.findById(req.body.sentence_index);
   if (!puzzle) {
+    logger.error("/check-puzzle: puzzle does not exists");
     res.status(404).send({ error: "Puzzle is not found" });
     throw Error("Puzzle is not found");
   }
@@ -328,7 +363,7 @@ app.post("/check-puzzle", async (req: Request, res: Response) => {
 });
 
 app.get("/user-elo", async (req: Request, res: Response) => {
-  console.log("/user-elo"); // TODO: logging
+  logger.debug("/user-elo");
   const user: TUser = await findUser(req);
   res.json(user.rating.rating);
 });
